@@ -5,9 +5,18 @@
 
 enum class Color { Black, Blue, Red, Orange, None };
 
+enum class SetType { Run, Group };
+
+enum class Move { CreateGroup, CreateRun, RemoveGroup, RemoveRun };
+
+
+/**************************** Tile **************************/
+
 struct Tile {
   Tile() = delete;
+
   Tile(int v, Color c, bool joker = false);
+
   void print() const;
 
   int value;
@@ -15,7 +24,51 @@ struct Tile {
   bool isJoker;
 };
 
-using Set = std::vector<Tile>;
-using Board = std::vector<Set>;
+/***********************************************************/
+
+
+/**************************** Set **************************/
+
+struct Set {
+  Set() = delete;
+  Set(SetType tp, std::vector<Tile> t);
+
+  void print() const;
+
+  int size() const;
+
+  // Returns true if *this is valid
+  bool valid() const;
+
+  SetType type;
+  std::vector<Tile> tiles;
+};
+
+/**********************************************************/
+
+
+/**************************** Board ***********************/
+
+class Board {
+  public:
+    Board();
+
+    void print() const;
+
+    // True <=> adding set to board was successful
+    bool add_set(const Set& set);
+
+    std::vector<Tile> tiles_on_board() const;
+
+  private:
+    std::vector<Set> runs;
+    std::vector<Set> groups;
+};
+
+/*********************************************************/
 
 #endif
+
+
+
+

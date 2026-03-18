@@ -1,19 +1,24 @@
 #include <iostream>
+#include <vector>
 #include "GameTypes.hpp"
+#include "Player.hpp"
 #include "TilesBag.hpp"
 
 int main() {
 
-  Tile t(1, Color::Red);
+  Board board;
 
-  TilesBag tb;
+  std::vector<Tile> v = {Tile(1, Color::Red), Tile(2, Color::Red), Tile(3, Color::Red)};
 
-  t.print();
+  Set s(SetType::Run, v);
 
-  tb.remove_tile(t);
-  tb.remove_tile(t);
+  board.add_set(s);
 
-  std::cout << tb.n_tiles_left(t) << std::endl;
+  board.print();
+
+  HumanPlayer p("Human");
+
+  p.play_turn(board);
 
   return 0;
 }
