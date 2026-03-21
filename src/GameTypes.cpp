@@ -1,5 +1,6 @@
 #include "GameTypes.hpp"
 #include "Constants.hpp"
+#include "Utils.hpp"
 #include <iostream>
 #include <cassert>
 #include <ostream>
@@ -13,21 +14,15 @@ Tile::Tile(int v, Color c, bool joker) : value(v), color(c), isJoker(joker) {}
 
 void Tile::print() const {
   if (isJoker) {
-    std::cout << "[Joker]" << std::endl;
+    std::cout << "[Joker]" << " ";
   }
   else {
-    std::string col;
-
-    switch (color) {
-      case Color::Black:      col = "Black";  break;
-      case Color::Red:        col = "Red";    break;
-      case Color::Orange:     col = "Orange"; break;
-      case Color::Blue:       col = "Blue";   break;
-      default: assert(false && "Tile not joker and color not valid.");
-    }
-
-    std::cout << "[" << value << " " << col << "]" << " ";
+    std::cout << "[" << value << " " << color_to_str(color) << "]" << " ";
   }
+}
+
+bool Tile::operator==(const Tile& other) const {
+  return (value == other.value) && (color == other.color);
 }
 
 /****************************************************************************/
@@ -72,7 +67,7 @@ bool Set::valid() const {
 
   else if (type == SetType::Run) {
 
-    if (size() < MIN_SET_SIZE || size() > (MAX_TILE_VALUE - MIN_TILE_VALUE + 1)) {
+    if (size() < MIN_SET_SIZE || size() > MAX_TILE_VALUE) {
       std::cout << size() << " is not a valid run-size. Try again.\n";
       return false;
     }
@@ -153,5 +148,4 @@ std::vector<Tile> Board::tiles_on_board() const {
 }
 
 /***************************************************************************/
-
 

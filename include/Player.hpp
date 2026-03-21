@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "GameTypes.hpp"
+#include "TilesBag.hpp"
 
 /********************* Player *******************/
 
@@ -15,9 +16,11 @@ class Player {
 
     virtual ~Player() = default;
 
-    virtual void play_turn(Board& board) = 0;
+    virtual void play_turn(Board& board, TilesBag& bag) = 0;
 
   private:
+    virtual bool draw_tile(TilesBag& bag) = 0;
+    
     std::string name;
     bool hasMadeFirstMove;
     int n_owned_tiles;
@@ -34,13 +37,21 @@ class HumanPlayer : public Player {
     HumanPlayer(std::string nme) : Player(nme) {}
 
     // Sequence of moves making up a turn
-    void play_turn(Board& board) override;
+    void play_turn(Board& board, TilesBag& bag) override;
 
   private:
-    // Individual moves sucha as creating a group
-    bool make_move(Board& board);
+    bool draw_tile(TilesBag &bag) override;
 
-    void create_group(Board& board);
+    // Individual moves such as creating a group
+    bool make_move(Board& board, TilesBag& bag);
+
+    bool create_group(Board& board);
+
+    bool create_run(Board& board);
+
+    bool remove_group(Board& board);
+
+    bool remove_run(Board& board);
 };
 
 /*********************************************************/
@@ -50,9 +61,11 @@ class HumanPlayer : public Player {
 
 class AIPlayer: public Player {
   public:
-    void play_turn(Board& board) override;
+    void play_turn(Board& board, TilesBag& bag) override;
 
   private:
+    bool draw_tile(TilesBag& bag) override;
+
     std::vector<Tile> hand;
 };
 

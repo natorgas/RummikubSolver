@@ -19,6 +19,8 @@ struct Tile {
 
   void print() const;
 
+  bool operator==(const Tile& other) const;
+
   int value;
   Color color;
   bool isJoker;
@@ -30,7 +32,7 @@ struct Tile {
 /**************************** Set **************************/
 
 struct Set {
-  Set() = delete;
+  Set() = default;
   Set(SetType tp, std::vector<Tile> t);
 
   void print() const;
