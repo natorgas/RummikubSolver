@@ -3,10 +3,13 @@
 
 #include "GameTypes.hpp"
 #include "Constants.hpp"
+#include <cstdio>
 #include <string>
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <set>
+#include <cassert>
 
 inline void to_lower(std::string& str) {
   std::transform(str.begin(), str.end(), str.begin(),
@@ -37,13 +40,18 @@ inline std::string color_to_str(Color col) {
   }
 }
 
-inline bool joker_check(std::vector<Tile>& vec) {
+inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
   std::cout << "How many jokers did you use to create this new Set? ";
   int jokersUsed;
   std::cin >> jokersUsed;
 
   if (jokersUsed < 0 || jokersUsed > INDIVIDUAL_TILE_FREQ) {
     std::cout << "This is an impossible amount of jokers to use. Try again.\n";
+    return false;
+  }
+
+  if (jokersUsed > 0 && !madeFristMove) {
+    std::cout << "You can't use a joker on your first move. Try again.\n";
     return false;
   }
 
@@ -68,6 +76,116 @@ inline bool joker_check(std::vector<Tile>& vec) {
     it->isJoker = true;
   }
   return true;
+}
+
+inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue) {
+  std::vector<Set> allGroups = {};
+
+  std::set<Tile> tileSet(tilesOfValue.begin(), tilesOfValue.end());
+
+  if (tileSet.size() < MIN_SET_SIZE) return allGroups; 
+
+  else if (tileSet.size() == MIN_SET_SIZE) {
+    Set groupOfThree(SetType::Group, std::vector<Tile>(tileSet.begin(), tileSet.end()));
+    allGroups.push_back(groupOfThree);
+  } 
+
+  else {
+    assert(tileSet.size() == MAX_GROUP_SIZE);
+    std::vector<Tile> uniqueTiles(tileSet.begin(), tileSet.end());
+
+    // Add the group of all 4 colors
+    Set groupOfFour(SetType::Group, uniqueTiles);
+    allGroups.push_back(groupOfFour);
+
+    // Add the four different groups of 3 colors
+    for (int i = 0; i < 4; ++i) {
+      Set groupOfThree(SetType::Group, {});
+      for (int j = 0; j < 4; ++j) {
+        if (i != j) {
+          groupOfThree.tiles.push_back(uniqueTiles[j]);
+        }
+      }
+      allGroups.push_back(groupOfThree);
+    }
+  }
+  return allGroups;
+}
+
+inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor) {
+  std::vector<Set> allRuns;
+  if (tilesOfColor.size() < MIN_SET_SIZE) return allRuns;
+
+  std::vector<Tile> uniqueTiles = tilesOfColor;
+
+  // Sort by value ascending
+  std::sort(uniqueTiles.begin(), uniqueTiles.end(),
+            [](const Tile& a, const Tile& b) { return a.value < b.value; });
+
+  // Remove duplicates
+  auto last = std::unique(uniqueTiles.begin(), uniqueTiles.end(),
+                          [](const Tile& a, const Tile& b) { return a.value == b.value; });
+  uniqueTiles.erase(last, uniqueTiles.end());
+
+  int n = uniqueTiles.size();
+
+  // Generate all valid sub-sequences
+  for (int i = 0; i < n; ++i) {
+    std::vector<Tile> currentRun;
+    
+    // Start sequence at tile i
+    currentRun.push_back(uniqueTiles[i]);
+
+    for (int j = i + 1; j < n; ++j) {
+      // If consecutive, add to the current run
+      if (uniqueTiles[j].value == (uniqueTiles[j - 1].value + 1)) {
+        currentRun.push_back(uniqueTiles[j]);
+
+        // Once it hits size 3 or more, it's a valid Rummikub run. Save it!
+        if (currentRun.size() >= 3) {
+          allRuns.push_back(Set(SetType::Run, currentRun));
+        }
+      } 
+      // Sequence broken, stop looking ahead
+      else break;
+    }
+  }
+
+  return allRuns;
+}
+
+inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
+
+  std::vector<Set> allSets;
+  allSets.reserve(pool.size());
+
+  // Create all groups
+  for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
+    std::vector<Tile> tilesOfValue;
+    tilesOfValue.reserve(NUM_COLORS * INDIVIDUAL_TILE_FREQ);
+
+    for (const Tile& t : pool) {
+      if (t.value == val) tilesOfValue.push_back(t);
+    }
+
+    std::vector<Set> allGroups = generate_groups(tilesOfValue);
+    allSets.insert(allSets.end(), allGroups.begin(), allGroups.end());
+  }
+
+  // Create all runs
+  for (Color col : ALL_COLORS) {
+    std::vector<Tile> tilesOfColor;
+    tilesOfColor.reserve(INDIVIDUAL_TILE_FREQ * MAX_TILE_VALUE);
+
+    for (const Tile& t : pool) {
+      if (t.color == col) tilesOfColor.push_back(t);
+    }
+
+    std::vector<Set> allRuns = generate_runs(tilesOfColor);
+    allSets.insert(allSets.end(), allRuns.begin(), allRuns.end());
+  }
+
+  return allSets;
 }
 
 #endif

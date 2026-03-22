@@ -4,10 +4,11 @@
 #include "TilesBag.hpp"
 #include "Utils.hpp"
 #include <algorithm>
+#include <cassert>
 #include <string>
 #include <iostream>
-#include <sys/types.h>
 #include <vector>
+#include <map>
 
 
 /********************* Player *******************/
@@ -15,29 +16,60 @@
 
 Player::Player(std::string nme) : name(nme), 
                                   hasMadeFirstMove(false), 
-                                  n_owned_tiles(INITIAL_N_OWNED_TILES) {}
+                                  nOwnedTiles(0) {}
 
 std::string Player::get_name() const { return name; }
 
+void Player::inital_draw(TilesBag& bag) {
+  for (int i = 0; i < INITIAL_N_OWNED_TILES; ++i) {
+    draw_tile(bag);
+  }
+}
+
+void Player::increase_tiles(int n) {
+  assert(n > 0);
+  nOwnedTiles += n;
+}
+
+void Player::decrease_tiles(int n) {
+  assert(n > 0);
+  nOwnedTiles -= n;
+  assert(nOwnedTiles >= 0 && "Can't have negative amount of tiles");
+}
+
+void Player::make_first_move() { hasMadeFirstMove = true; }
+
+bool Player::made_first_move() const { return hasMadeFirstMove; }
+
+int Player::n_owned_tiles() const { return nOwnedTiles; }
 
 /************************************************/
 
 /********************* Player -> Human *******************/
 
+HumanPlayer::HumanPlayer(std::string nme) : Player(nme) {}
+
 void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
+
+  Board initialBoard = board;
+
   while (true) {
 
     // Initiate 'sandbox'
     Board boardCopy = board;
 
-    // Show the usser the current board
-    board.print();
+    // Show the user the current board
+    boardCopy.print();
 
     // If anything goes wrong, prompt again
     if (!make_move(boardCopy, bag)) continue;
 
     // If move is valid, realize the change
     board = std::move(boardCopy);
+
+    if (!made_first_move()) {
+      make_first_move();
+    }
 
     bool DONE = false;
 
@@ -46,17 +78,38 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     char done;
     std::cin >> done;
 
-      if (done == 'y') {
-        DONE = true;
+    if (done == 'y') {
+
+      // Make sure all tiles that were on the board before are also on the board now
+      // No permanent removal of tiles allowed
+      std::vector<Tile> tilesOnOldBoard = initialBoard.tiles_on_board();
+      std::vector<Tile> tilesOnNewBoard = board.tiles_on_board();
+
+      std::sort(tilesOnOldBoard.begin(), tilesOnOldBoard.end());
+      std::sort(tilesOnNewBoard.begin(), tilesOnNewBoard.end());
+
+      // If inclusion not satisfied, reset board and start over
+      if (!std::includes(tilesOnNewBoard.begin(), tilesOnNewBoard.end(),
+                         tilesOnOldBoard.begin(), tilesOnOldBoard.end())) {
+        std::cout << "You need to place down all tiles that you picked up by 'removing'" << std::endl;
+        std::cout << "Board was reset, start yor turn from the beginning.\n";
+        board = initialBoard;
         break;
       }
 
-      else if (done == 'n') break;
-
-      else std::cout << done << " is not a valid answer. Try again.\n";
+      DONE = true;
+      break;
     }
 
-    if (DONE) break;
+    else if (done == 'n') break;
+
+    else std::cout << done << " is not a valid answer. Try again.\n";
+    }
+
+    if (DONE) {
+      decrease_tiles(board.size() - initialBoard.size());
+      break;
+    }
   }
 }
 
@@ -99,6 +152,7 @@ bool HumanPlayer::make_move(Board& boardCopy, TilesBag& bag) {
 
 bool HumanPlayer::draw_tile(TilesBag& bag) {
   bag.draw();
+  increase_tiles(1);
   return true;
 }
 
@@ -147,7 +201,8 @@ bool HumanPlayer::create_group(Board& boardCopy) {
   }
 
   // joker_check accounts for potential joker usage
-  while(!joker_check(newGroupTiles));
+  // Returns true in case of success
+  while(!joker_check(newGroupTiles, made_first_move()));
 
   newGroup.tiles = newGroupTiles;
 
@@ -186,7 +241,8 @@ bool HumanPlayer::create_run(Board& boardCopy) {
     newRunTiles.emplace_back(Tile(val, runColor));
   }
 
-  while (!joker_check(newRunTiles));
+  while (!joker_check(newRunTiles, made_first_move()));
+
   newRun.tiles = newRunTiles;
 
   boardCopy.add_set(newRun);
@@ -199,11 +255,30 @@ bool HumanPlayer::remove_group(Board& boardCopy) {
   int index;
   std::cin >> index;
 
-  // Todo
+  // Index check
+  if (boardCopy.groups.begin() + index >= boardCopy.groups.end() ||
+      boardCopy.groups.begin() + index < boardCopy.groups.begin()) {
+    std::cout << "Group index " << index << " does not exist. Try again.\n";
+    return false;
+  }
 
+  boardCopy.groups.erase(boardCopy.groups.begin() + index);
+  return true;
 }
 
 bool HumanPlayer::remove_run(Board& boardCopy) {
+  std::cout << "Enter the index of the run you want to remove: ";
+  int index;
+  std::cin >> index;
+
+  // Index check
+  if (boardCopy.runs.begin() + index >= boardCopy.runs.end() ||
+      boardCopy.runs.begin() + index < boardCopy.runs.begin()) {
+    std::cout << "Run index " << index << " does not exist. Try again.\n";
+    return false;
+  }
+
+  boardCopy.runs.erase(boardCopy.runs.begin() + index);
   return true;
 }
 
@@ -211,11 +286,46 @@ bool HumanPlayer::remove_run(Board& boardCopy) {
 
 /********************* Player -> AI *******************/
 
+AIPlayer::AIPlayer(std::string nme) : Player(nme) {}
+
 bool AIPlayer::draw_tile(TilesBag& bag) {
+  std::cout << "Enter the tile you drew in the format 'value color'.\n";
+  int val;
+  std::string c;
+  std::cin >> val >> c;
+  Color col = str_to_color(c);
+
+  bag.draw();
+  Tile drawnTile(val, col);
+  bag.remove_tile(drawnTile);
+
+  increase_tiles(1);
+
   return true;
 }
 
 void AIPlayer::play_turn(Board& board, TilesBag& bag) {
+  std::vector<Tile> tilesOnBoard = board.tiles_on_board();
+  std::vector<Tile> pool = tilesOnBoard;
+  pool.insert(pool.end(), hand.begin(), hand.end());
+
+  std::vector<Set> allSets = generate_all_sets(pool);
+
+  // Must all be placed
+  std::map<Tile, int> boardTiles;
+
+  for (const Tile& t : tilesOnBoard) {
+    boardTiles[t]++;
+  }
+
+  Board bestBoard = board;
+  int maxHandTilesUsed = -1;
+
+}
+
+void AIPlayer::find_best_move(
+    const std::vector<Set>&   allSets, 
+    std::map<Tile, int>&      boardTiles) const {
 
 }
 

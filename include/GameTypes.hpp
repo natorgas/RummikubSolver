@@ -21,6 +21,8 @@ struct Tile {
 
   bool operator==(const Tile& other) const;
 
+  bool operator<(const Tile& other) const;
+
   int value;
   Color color;
   bool isJoker;
@@ -62,7 +64,8 @@ class Board {
 
     std::vector<Tile> tiles_on_board() const;
 
-  private:
+    int size() const;
+
     std::vector<Set> runs;
     std::vector<Set> groups;
 };

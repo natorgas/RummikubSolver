@@ -21,6 +21,13 @@ void Tile::print() const {
   }
 }
 
+bool Tile::operator<(const Tile& other) const {
+  if (color != other.color) {
+    return color < other.color;
+  }
+  return value < other.value;
+}
+
 bool Tile::operator==(const Tile& other) const {
   return (value == other.value) && (color == other.color);
 }
@@ -145,6 +152,10 @@ std::vector<Tile> Board::tiles_on_board() const {
   }
 
   return allTiles;
+}
+
+int Board::size() const {
+  return runs.size() + groups.size();
 }
 
 /***************************************************************************/
