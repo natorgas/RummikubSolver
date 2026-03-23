@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cassert>
 #include <ostream>
-#include <string>
 #include <vector>
 #include <set>
 
@@ -114,6 +113,8 @@ void Board::print() const {
     std::cout << i << ": ";
     groups[i].print();
   }
+
+  std::cout << std::endl;
 
   // Print all Runs
   std::cout << "###################"

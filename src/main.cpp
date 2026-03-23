@@ -20,7 +20,7 @@ int main() {
   p.inital_draw(bag);
   // d.inital_draw(bag);
 
-  d.play_turn(board, bag);
+  p.play_turn(board, bag);
 
   return 0;
 }

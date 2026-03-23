@@ -41,41 +41,58 @@ inline std::string color_to_str(Color col) {
 }
 
 inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
-  std::cout << "How many jokers did you use to create this new Set? ";
-  int jokersUsed;
-  std::cin >> jokersUsed;
+  while (true) {
+    std::cout << "How many jokers did you use to create this new Set? ";
+    int jokersUsed;
+    std::cin >> jokersUsed;
 
-  if (jokersUsed < 0 || jokersUsed > INDIVIDUAL_TILE_FREQ) {
-    std::cout << "This is an impossible amount of jokers to use. Try again.\n";
-    return false;
-  }
-
-  if (jokersUsed > 0 && !madeFristMove) {
-    std::cout << "You can't use a joker on your first move. Try again.\n";
-    return false;
-  }
-
-  for (int i = 0; i < jokersUsed; ++i) {
-    std::cout << "Enter the tile you want to replace in the format 'value color'.\n";
-
-    int val;
-    std::string c;
-    std::cin >> val >> c;
-
-    Color col = str_to_color(c);
-
-    // Search for the tile in the vector
-    auto it = std::find(vec.begin(), vec.end(), Tile(val, col));
-    // If not found, tell user to try again
-    if (it == vec.end()) {
-      std::cout << "This tile is not needed for what you want to create. Try again.\n";
-      i--;
-      continue; 
+    // Check for invalid input
+    if (jokersUsed < 0 || jokersUsed > INDIVIDUAL_TILE_FREQ) {
+      std::cout << "This is an impossible amount of jokers to use. Try again.\n";
+      continue;
     }
-    // If found, turn into joker
-    it->isJoker = true;
+
+    // Make sure no joker used on the first move
+    if (jokersUsed > 0 && !madeFristMove) {
+      std::cout << "You can't use a joker on your first move. Try again.\n";
+      return false;
+    }
+
+    // Enforce that first move must be worth >= 30 points
+    if (!madeFristMove) {
+      int tileValueSum = 0;
+      for (const Tile& t : vec) {
+        tileValueSum += t.value;
+      }
+      if (tileValueSum < 30) {
+        std::cout << "Your first move must be worth 30 points. Try again.\n";
+        return false;
+      }
+    }
+
+    for (int i = 0; i < jokersUsed; ++i) {
+      assert(madeFristMove);
+      std::cout << "Enter the tile you want to replace in the format 'value color'.\n";
+
+      int val;
+      std::string c;
+      std::cin >> val >> c;
+
+      Color col = str_to_color(c);
+
+      // Search for the tile in the vector
+      auto it = std::find(vec.begin(), vec.end(), Tile(val, col));
+      // If not found, tell user to try again
+      if (it == vec.end()) {
+        std::cout << "This tile is not needed for what you want to create. Try again.\n";
+        i--;
+        continue; 
+      }
+      // If found, turn into joker
+      it->isJoker = true;
+    }
+    return true;
   }
-  return true;
 }
 
 inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue) {

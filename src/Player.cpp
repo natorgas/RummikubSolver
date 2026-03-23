@@ -202,7 +202,7 @@ bool HumanPlayer::create_group(Board& boardCopy) {
 
   // joker_check accounts for potential joker usage
   // Returns true in case of success
-  while(!joker_check(newGroupTiles, made_first_move()));
+  if (!joker_check(newGroupTiles, made_first_move())) return false;
 
   newGroup.tiles = newGroupTiles;
 
