@@ -6,19 +6,15 @@ int main() {
 
   Board board;
   
-  board.add_set(Set(SetType::Group, {Tile(3, Color::Red),
-                                     Tile(3, Color::Black),
-                                     Tile(3, Color::Orange),
-                                     Tile(3, Color::Blue)}));
   TilesBag bag;
 
-  HumanPlayer p("Human");
+  // HumanPlayer p("Human");
   AIPlayer d("Dave");
 
-  p.inital_draw(bag);
-  // d.inital_draw(bag);
+  // p.inital_draw(bag);
+  d.inital_draw(bag);
 
-  p.play_turn(board, bag);
+  d.play_turn(board, bag);
 
   return 0;
 }

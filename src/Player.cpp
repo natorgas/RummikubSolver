@@ -297,6 +297,7 @@ bool AIPlayer::draw_tile(TilesBag& bag) {
 
   bag.draw();
   Tile drawnTile(val, col);
+  hand.push_back(drawnTile);
   bag.remove_tile(drawnTile);
 
   increase_tiles(1);
@@ -327,14 +328,40 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
     allTiles[t]++;
   }
 
-  Board bestBoard = board;
-  int maxHandTilesUsed = -1;
+  const int initialBoardSize = board.size();
+  std::vector<int> setIndexToUseFreq(allSets.size(), 0);
+  std::vector<int> bestSetIndexToUseFreq(allSets.size(), 0);
+  int maxHandTilesUsed = 0;
+  const int allSetsIndex = 0;
+
+  find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
+                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
+
+  Board newBoard;
+
+  for (int i = 0; i < bestSetIndexToUseFreq.size(); ++i) {
+    for (int freq = 0; freq < bestSetIndexToUseFreq[i]; ++freq) {
+      newBoard.add_set(allSets[i]);
+    }
+  }
+
+  if (maxHandTilesUsed > 0) {
+    std::cout << "Was able to place " << maxHandTilesUsed - initialBoardSize << " tiles." << std::endl;
+    board = std::move(newBoard);
+  }
+  
+  else {
+    std::cout << "You have no moves left, draw a tile." << std::endl;
+    draw_tile(bag);
+  }
+
+  std::cout << "Current Board: " << std::endl;
+  board.print();
 }
 
 void AIPlayer::find_best_move(
-    const int&              handSize,
     const std::vector<Set>& allSets, 
-    const int&              initialBoardSize,
+    const int               initialBoardSize,
     std::map<Tile, int>&    boardTiles,
     std::map<Tile, int>&    availableTiles,
     std::vector<int>&       setIndexToUseFreq,
@@ -349,22 +376,29 @@ void AIPlayer::find_best_move(
     // If no -> try next set
     // If we ever manage to place <handSize> tiles -> break
 
-  if (allSetsIndex >= allSets.size()) return;
+  if (allSetsIndex >= allSets.size()) {
+    // std::cout << "Reached the end of vector.\n"; // DEBUG
+    return;
+  }
 
   if (all_original_tiles_placed(boardTiles)) {
+    // std::cout << "Placed all" << std::endl;
     // If yes count how many tiles we placed and update best move accordingly
     int tilesOnBoard = 0;
     for (int i = 0; i < setIndexToUseFreq.size(); i++) {
       tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
     }
     const int nHandTilesUsed = tilesOnBoard - initialBoardSize;
+    // std::cout << "Tiles on board = " << tilesOnBoard << std::endl;
+    // std::cout << "Initial board size = " << initialBoardSize << std::endl;
+    // std::cout << "Tiles used = " << nHandTilesUsed << std::endl;
     assert(nHandTilesUsed >= 0);
     if (nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
 
       // If we used all tiles on hand, we won
-      if (maxHandTilesUsed == handSize) {
+      if (maxHandTilesUsed == n_owned_tiles()) {
         std::cout << get_name() << " won!\n";
         return;
       }
@@ -392,7 +426,7 @@ void AIPlayer::find_best_move(
     }
 
     // Go to next set
-    find_best_move(handSize, allSets, initialBoardSize, boardTiles, availableTiles,
+    find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                    setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
 
     // If we return from the upper function => placing this set did not work out, remove it
@@ -406,7 +440,7 @@ void AIPlayer::find_best_move(
   }
   
   // We go to next set independently of whether or not we were able to place current set
-  find_best_move(handSize, allSets, initialBoardSize, boardTiles, availableTiles,
+  find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                  setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1);
 
 }

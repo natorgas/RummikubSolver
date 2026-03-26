@@ -85,9 +85,8 @@ class AIPlayer: public Player {
     bool draw_tile(TilesBag& bag) override;
 
     void find_best_move(
-        const int&              handSize,
         const std::vector<Set>& allSets, 
-        const int&              initialBoardSize,
+        const int               initialBoardSize,
         std::map<Tile, int>&    boardTiles,
         std::map<Tile, int>&    allTiles,
         std::vector<int>&       setIndexToUseFreq,
