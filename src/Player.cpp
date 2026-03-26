@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include <cassert>
+#include <new>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -12,7 +13,6 @@
 
 
 /********************* Player *******************/
-
 
 Player::Player(std::string nme) : name(nme), 
                                   hasMadeFirstMove(false), 
@@ -27,12 +27,12 @@ void Player::inital_draw(TilesBag& bag) {
 }
 
 void Player::increase_tiles(int n) {
-  assert(n > 0);
+  assert(n >= 0);
   nOwnedTiles += n;
 }
 
 void Player::decrease_tiles(int n) {
-  assert(n > 0);
+  assert(n >= 0);
   nOwnedTiles -= n;
   assert(nOwnedTiles >= 0 && "Can't have negative amount of tiles");
 }
@@ -74,36 +74,36 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     bool DONE = false;
 
     while (true) {
-    std::cout << "Are you done with your turn? [y/n].\n";
-    char done;
-    std::cin >> done;
+      std::cout << "Are you done with your turn? [y/n].\n";
+      char done;
+      std::cin >> done;
 
-    if (done == 'y') {
+      if (done == 'y') {
 
-      // Make sure all tiles that were on the board before are also on the board now
-      // No permanent removal of tiles allowed
-      std::vector<Tile> tilesOnOldBoard = initialBoard.tiles_on_board();
-      std::vector<Tile> tilesOnNewBoard = board.tiles_on_board();
+        // Make sure all tiles that were on the board before are also on the board now
+        // No permanent removal of tiles allowed
+        std::vector<Tile> tilesOnOldBoard = initialBoard.tiles_on_board();
+        std::vector<Tile> tilesOnNewBoard = board.tiles_on_board();
 
-      std::sort(tilesOnOldBoard.begin(), tilesOnOldBoard.end());
-      std::sort(tilesOnNewBoard.begin(), tilesOnNewBoard.end());
+        std::sort(tilesOnOldBoard.begin(), tilesOnOldBoard.end());
+        std::sort(tilesOnNewBoard.begin(), tilesOnNewBoard.end());
 
-      // If inclusion not satisfied, reset board and start over
-      if (!std::includes(tilesOnNewBoard.begin(), tilesOnNewBoard.end(),
-                         tilesOnOldBoard.begin(), tilesOnOldBoard.end())) {
-        std::cout << "You need to place down all tiles that you picked up by 'removing'" << std::endl;
-        std::cout << "Board was reset, start yor turn from the beginning.\n";
-        board = initialBoard;
+        // If inclusion not satisfied, reset board and start over
+        if (!std::includes(tilesOnNewBoard.begin(), tilesOnNewBoard.end(),
+              tilesOnOldBoard.begin(), tilesOnOldBoard.end())) {
+          std::cout << "You need to place down all tiles that you picked up by 'removing'" << std::endl;
+          std::cout << "Board was reset, start yor turn from the beginning.\n";
+          board = initialBoard;
+          break;
+        }
+
+        DONE = true;
         break;
       }
 
-      DONE = true;
-      break;
-    }
+      else if (done == 'n') break;
 
-    else if (done == 'n') break;
-
-    else std::cout << done << " is not a valid answer. Try again.\n";
+      else std::cout << done << " is not a valid answer. Try again.\n";
     }
 
     if (DONE) {
@@ -119,13 +119,13 @@ bool HumanPlayer::make_move(Board& boardCopy, TilesBag& bag) {
 
   std::cout << std::endl;
   std::cout << get_name() << ", do you want to \n"
-            << "-Create new group [cg] \n" 
-            << "-Create new run [cr] \n" 
-            << "-Remove group [rg] \n"
-            << "-Remove run [rr] \n"
-            << "-Draw a tile [d] \n"
-            << "-Abort [a]"
-            << std::endl;
+                          << "-Create new group [cg] \n" 
+                          << "-Create new run [cr] \n" 
+                          << "-Remove group [rg] \n"
+                          << "-Remove run [rr] \n"
+                          << "-Draw a tile [d] \n"
+                          << "-Abort [a]"
+                          << std::endl;
 
   std::string input;
   std::cin >> input;
@@ -200,8 +200,8 @@ bool HumanPlayer::create_group(Board& boardCopy) {
     }
   }
 
-  // joker_check accounts for potential joker usage
-  // Returns true in case of success
+  // joker_check accounts for potential joker usage and first move exceptions (e.g. 30 point rule)
+  // Returns true in case of a successful check
   if (!joker_check(newGroupTiles, made_first_move())) return false;
 
   newGroup.tiles = newGroupTiles;
@@ -241,7 +241,7 @@ bool HumanPlayer::create_run(Board& boardCopy) {
     newRunTiles.emplace_back(Tile(val, runColor));
   }
 
-  while (!joker_check(newRunTiles, made_first_move()));
+  if (!joker_check(newRunTiles, made_first_move())) return false;
 
   newRun.tiles = newRunTiles;
 
@@ -311,21 +311,103 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   std::vector<Set> allSets = generate_all_sets(pool);
 
-  // Must all be placed
+  // Frequency of all tiles that can be used to build sets
+  std::map<Tile, int> allTiles;
+
+  // Must all be placed -> need every entry to have freq = 0 (all placed)
   std::map<Tile, int> boardTiles;
 
   for (const Tile& t : tilesOnBoard) {
     boardTiles[t]++;
+    allTiles[t]++;
+  }
+
+  // Add missing tiles to allTiles (the ones on hand)
+  for (const Tile& t : hand) {
+    allTiles[t]++;
   }
 
   Board bestBoard = board;
   int maxHandTilesUsed = -1;
-
 }
 
 void AIPlayer::find_best_move(
-    const std::vector<Set>&   allSets, 
-    std::map<Tile, int>&      boardTiles) const {
+    const int&              handSize,
+    const std::vector<Set>& allSets, 
+    const int&              initialBoardSize,
+    std::map<Tile, int>&    boardTiles,
+    std::map<Tile, int>&    availableTiles,
+    std::vector<int>&       setIndexToUseFreq,
+    std::vector<int>&       bestSetIndexToUseFreq,
+    int&                    maxHandTilesUsed,
+    const int               allSetsIndex
+) const {
+
+  // Iterate over allSets, try to use set i. For that check if each tile has availableTiles[tile] >= 1
+    // If yes -> 'use' that set and decrease available tiles for each tile and boardTiles for each tile that still has positive value in the map
+      // If every entry in boardTiles has value 0 we have a valid board -> max = max(currentUsedTiles, previousMax), save bestBoard if max updated
+    // If no -> try next set
+    // If we ever manage to place <handSize> tiles -> break
+
+  if (allSetsIndex >= allSets.size()) return;
+
+  if (all_original_tiles_placed(boardTiles)) {
+    // If yes count how many tiles we placed and update best move accordingly
+    int tilesOnBoard = 0;
+    for (int i = 0; i < setIndexToUseFreq.size(); i++) {
+      tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
+    }
+    const int nHandTilesUsed = tilesOnBoard - initialBoardSize;
+    assert(nHandTilesUsed >= 0);
+    if (nHandTilesUsed > maxHandTilesUsed) {
+      maxHandTilesUsed = nHandTilesUsed;
+      bestSetIndexToUseFreq = setIndexToUseFreq;
+
+      // If we used all tiles on hand, we won
+      if (maxHandTilesUsed == handSize) {
+        std::cout << get_name() << " won!\n";
+        return;
+      }
+    }
+  }
+
+  const Set& trialSet = allSets[allSetsIndex];
+
+  // If set can be placed
+  if (set_can_be_placed(trialSet, availableTiles)) {
+
+    // Place it
+    setIndexToUseFreq[allSetsIndex]++;
+
+    std::vector<Tile> decrementedBoardTiles;
+    decrementedBoardTiles.reserve(trialSet.size());
+
+    // And decrement tiles correctly
+    for (const Tile& t : trialSet.tiles) {
+      availableTiles[t]--;
+      if (boardTiles[t] > 0) {
+        boardTiles[t]--;
+        decrementedBoardTiles.push_back(t);
+      }
+    }
+
+    // Go to next set
+    find_best_move(handSize, allSets, initialBoardSize, boardTiles, availableTiles,
+                   setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
+
+    // If we return from the upper function => placing this set did not work out, remove it
+    setIndexToUseFreq[allSetsIndex]--;
+    for (const Tile& t : trialSet.tiles) {
+      availableTiles[t]++;
+    }
+    for (const Tile& t : decrementedBoardTiles) {
+      boardTiles[t]++;
+    }
+  }
+  
+  // We go to next set independently of whether or not we were able to place current set
+  find_best_move(handSize, allSets, initialBoardSize, boardTiles, availableTiles,
+                 setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1);
 
 }
 

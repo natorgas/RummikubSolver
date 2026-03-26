@@ -3,13 +3,13 @@
 
 #include "GameTypes.hpp"
 #include "Constants.hpp"
-#include <cstdio>
 #include <string>
 #include <algorithm>
 #include <iostream>
 #include <vector>
 #include <set>
 #include <cassert>
+#include <map>
 
 inline void to_lower(std::string& str) {
   std::transform(str.begin(), str.end(), str.begin(),
@@ -203,6 +203,22 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
   }
 
   return allSets;
+}
+
+inline bool set_can_be_placed(const Set& set, std::map<Tile, int>& availableTiles) {
+  for (const Tile& t : set.tiles) {
+    if (availableTiles[t] == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool all_original_tiles_placed(std::map<Tile, int>& boardTiles) {
+  for (const auto& [tile, freq] : boardTiles) {
+    if (freq != 0) return false;
+  }
+  return true;
 }
 
 #endif
