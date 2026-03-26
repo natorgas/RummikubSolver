@@ -346,7 +346,8 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   }
 
   if (maxHandTilesUsed > 0) {
-    std::cout << "Was able to place " << maxHandTilesUsed - initialBoardSize << " tiles." << std::endl;
+    std::cout << "Was able to place " << maxHandTilesUsed << " tiles." << std::endl;
+    decrease_tiles(maxHandTilesUsed);
     board = std::move(newBoard);
   }
   

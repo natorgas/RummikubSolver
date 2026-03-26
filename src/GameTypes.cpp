@@ -1,8 +1,10 @@
 #include "GameTypes.hpp"
 #include "Constants.hpp"
 #include "Utils.hpp"
+#include <cstdlib>
 #include <iostream>
 #include <cassert>
+#include <iterator>
 #include <ostream>
 #include <vector>
 #include <set>
@@ -156,7 +158,14 @@ std::vector<Tile> Board::tiles_on_board() const {
 }
 
 int Board::size() const {
-  return runs.size() + groups.size();
+  int size = 0;
+  for (const Set& g : groups) {
+    size += g.size();
+  }
+  for (const Set& r : runs) {
+    size += r.size();
+  }
+  return size;
 }
 
 /***************************************************************************/

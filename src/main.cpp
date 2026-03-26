@@ -8,6 +8,11 @@ int main() {
   
   TilesBag bag;
 
+  board.add_set(Set(SetType::Group, {Tile(3, Color::Red),
+        Tile(3, Color::Black),
+        Tile(3, Color::Orange),
+        Tile(3, Color::Blue)}));
+
   // HumanPlayer p("Human");
   AIPlayer d("Dave");
 
