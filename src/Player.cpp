@@ -83,6 +83,7 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
         std::vector<Tile> tilesOnOldBoard = initialBoard.tiles_on_board();
         std::vector<Tile> tilesOnNewBoard = board.tiles_on_board();
 
+        // Normalize jokers s.t. we don't get an error if a joker's role has changed due to a move
         normalize_jokers(tilesOnOldBoard);
         normalize_jokers(tilesOnNewBoard);
 
@@ -341,6 +342,8 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   std::vector<Set> allSets = generate_all_sets(pool);
 
+  normalize_jokers(tilesOnBoard);
+
   // Frequency of all tiles that can be used to build sets
   std::map<Tile, int> allTiles;
 
@@ -362,6 +365,9 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   std::vector<int> bestSetIndexToUseFreq(allSets.size(), 0);
   int maxHandTilesUsed = 0;
   const int allSetsIndex = 0;
+
+  std::sort(allSets.begin(), allSets.end(), 
+            [](const Set& a, const Set& b){ return a.size() > b.size(); });
 
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
                  bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
@@ -459,10 +465,20 @@ void AIPlayer::find_best_move(
 
     // And decrement tiles correctly
     for (const Tile& t : trialSet.tiles) {
-      availableTiles[t]--;
-      if (boardTiles[t] > 0) {
-        boardTiles[t]--;
-        decrementedBoardTiles.push_back(t);
+      if (t.isJoker) {
+        Tile joker(0, Color::None, true);
+        availableTiles[joker]--;
+        if (boardTiles[joker] > 0) {
+          boardTiles[joker]--;
+          decrementedBoardTiles.push_back(joker);
+        }
+      }
+      else {
+        availableTiles[t]--;
+        if (boardTiles[t] > 0) {
+          boardTiles[t]--;
+          decrementedBoardTiles.push_back(t);
+        }
       }
     }
 
@@ -473,10 +489,16 @@ void AIPlayer::find_best_move(
     // If we return from the upper function => placing this set did not work out, remove it
     setIndexToUseFreq[allSetsIndex]--;
     for (const Tile& t : trialSet.tiles) {
-      availableTiles[t]++;
+      if (t.isJoker) {
+        availableTiles[Tile(0, Color::None, true)]++;
+      }
+      else availableTiles[t]++;
     }
     for (const Tile& t : decrementedBoardTiles) {
-      boardTiles[t]++;
+      if (t.isJoker) {
+        boardTiles[Tile(0, Color::None, true)]++;
+      }
+      else boardTiles[t]++;
     }
   }
   

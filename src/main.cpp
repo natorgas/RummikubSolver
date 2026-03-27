@@ -40,15 +40,17 @@ int main() {
   std::cout << std::endl;
   std::cout << "There is NO case-sensitivity for user input of type string.\n\n";
 
-  board.add_set(Set(SetType::Run, {Tile(6, Color::Red, true),
-        Tile(7, Color::Red),
-        Tile(8, Color::Red),
-        Tile(9, Color::Red)}));
-
-  HumanPlayer p("Ivo");
-  p.inital_draw(bag);
-  p.play_turn(board, bag);
-  p.play_turn(board, bag);
+  // board.add_set(Set(SetType::Run, {Tile(6, Color::Red, true),
+  //       Tile(7, Color::Red),
+  //       Tile(8, Color::Red),
+  //       Tile(9, Color::Red)}));
+  //
+  // AIPlayer p("Davide");
+  // p.inital_draw(bag);
+  //
+  // p.play_turn(board, bag);
+  //
+  // return 0;
 
   // Let everyone draw their initial tiles
   for (auto& player_p : players) {
