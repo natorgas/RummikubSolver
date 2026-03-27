@@ -86,7 +86,7 @@ inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
   }
 }
 
-inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue) {
+inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, const int nJokers) {
   std::vector<Set> allGroups = {};
 
   std::set<Tile> tileSet(tilesOfValue.begin(), tilesOfValue.end());
@@ -169,23 +169,33 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
 
   // Create all groups
   for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
+    int nJokers = 0;
     std::vector<Tile> tilesOfValue;
     tilesOfValue.reserve(NUM_COLORS * INDIVIDUAL_TILE_FREQ);
 
     for (const Tile& t : pool) {
+      if (t.isJoker) {
+        nJokers++;
+        continue;
+      }
       if (t.value == val) tilesOfValue.push_back(t);
     }
 
-    std::vector<Set> allGroups = generate_groups(tilesOfValue);
+    std::vector<Set> allGroups = generate_groups(tilesOfValue, nJokers);
     allSets.insert(allSets.end(), allGroups.begin(), allGroups.end());
   }
 
   // Create all runs
   for (Color col : ALL_COLORS) {
+    int nJokers = 0;
     std::vector<Tile> tilesOfColor;
     tilesOfColor.reserve(INDIVIDUAL_TILE_FREQ * MAX_TILE_VALUE);
 
     for (const Tile& t : pool) {
+      if (t.isJoker) {
+        nJokers++;
+        continue;
+      }
       if (t.color == col) tilesOfColor.push_back(t);
     }
 
@@ -228,6 +238,15 @@ inline int val_sum_of_placed_tiles(const Board& oldBoard, const Board& newBoard)
     valSum -= t.value;
   }
   return valSum;
+}
+
+inline void normalize_jokers(std::vector<Tile>& tiles) {
+  for (Tile& t : tiles) {
+    if (t.isJoker) {
+      t.color = Color::None;
+      t.value = 0;
+    }
+  }
 }
 
 #endif

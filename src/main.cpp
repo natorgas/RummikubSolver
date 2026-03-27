@@ -12,10 +12,6 @@ int main() {
   
   TilesBag bag;
 
-  HumanPlayer p("Ivo");
-  p.inital_draw(bag);
-  p.play_turn(board, bag);
-
   int nPlayers;
   std::cout << "How many players are playing?\n";
   std::cin >> nPlayers;
@@ -44,21 +40,26 @@ int main() {
   std::cout << std::endl;
   std::cout << "There is NO case-sensitivity for user input of type string.\n\n";
 
-  board.add_set(Set(SetType::Group, {Tile(3, Color::Red),
-        Tile(3, Color::Black),
-        Tile(3, Color::Orange),
-        Tile(3, Color::Blue)}));
+  board.add_set(Set(SetType::Run, {Tile(6, Color::Red, true),
+        Tile(7, Color::Red),
+        Tile(8, Color::Red),
+        Tile(9, Color::Red)}));
+
+  HumanPlayer p("Ivo");
+  p.inital_draw(bag);
+  p.play_turn(board, bag);
+  p.play_turn(board, bag);
 
   // Let everyone draw their initial tiles
   for (auto& player_p : players) {
     player_p->inital_draw(bag);
   }
 
-  while (!have_winner(players)) {
-    for (auto& player_p : players) {
-      player_p->play_turn(board,  bag);
-    }
-  }
+  // while (!have_winner(players)) {
+  //   for (auto& player_p : players) {
+  //     player_p->play_turn(board,  bag);
+  //   }
+  // }
 
   std::cout << "'The game is over' -Babu\n";
 

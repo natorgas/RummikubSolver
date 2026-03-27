@@ -83,6 +83,9 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
         std::vector<Tile> tilesOnOldBoard = initialBoard.tiles_on_board();
         std::vector<Tile> tilesOnNewBoard = board.tiles_on_board();
 
+        normalize_jokers(tilesOnOldBoard);
+        normalize_jokers(tilesOnNewBoard);
+
         std::sort(tilesOnOldBoard.begin(), tilesOnOldBoard.end());
         std::sort(tilesOnNewBoard.begin(), tilesOnNewBoard.end());
 
@@ -301,17 +304,31 @@ bool HumanPlayer::remove_run(Board& boardCopy) {
 AIPlayer::AIPlayer(std::string nme) : Player(nme) {}
 
 bool AIPlayer::draw_tile(TilesBag& bag) {
-  std::cout << "Enter the tile you drew in the format 'value color'.\n";
-  int val;
-  std::string c;
-  std::cin >> val >> c;
-  Color col = str_to_color(c);
+  std::cout << "Enter the tile (either 'Joker' or 'value color'):\n";
+
+  std::string input;
+  std::cin >> input;
+
+  if (input == "Joker" || input == "joker") {
+    Tile jokerTile(0, Color::None, true); // or however you represent it
+    hand.push_back(jokerTile);
+    bag.remove_tile(jokerTile);
+  }
+
+  else {
+    int val = std::stoi(input);
+
+    std::string c;
+    std::cin >> c;
+
+    Color col = str_to_color(c);
+
+    Tile drawnTile(val, col);
+    hand.push_back(drawnTile);
+    bag.remove_tile(drawnTile);
+  }
 
   bag.draw();
-  Tile drawnTile(val, col);
-  hand.push_back(drawnTile);
-  bag.remove_tile(drawnTile);
-
   increase_tiles(1);
 
   return true;
