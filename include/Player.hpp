@@ -22,6 +22,8 @@ class Player {
 
     void inital_draw(TilesBag& bag);
 
+    bool placed_all_tiles() const;
+
   protected:
     void increase_tiles(int n);
 

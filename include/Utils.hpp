@@ -3,6 +3,7 @@
 
 #include "GameTypes.hpp"
 #include "Constants.hpp"
+#include "Player.hpp"
 #include <string>
 #include <algorithm>
 #include <iostream>
@@ -10,6 +11,7 @@
 #include <set>
 #include <cassert>
 #include <map>
+#include <memory>
 
 inline void to_lower(std::string& str) {
   std::transform(str.begin(), str.end(), str.begin(),
@@ -219,6 +221,13 @@ inline bool all_original_tiles_placed(std::map<Tile, int>& boardTiles) {
     if (freq != 0) return false;
   }
   return true;
+}
+
+inline bool have_winner(const std::vector<std::unique_ptr<Player>>& players) {
+  for (auto& player_p : players) {
+    if (player_p->placed_all_tiles()) return true;
+  }
+  return false;
 }
 
 #endif

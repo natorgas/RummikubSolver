@@ -11,6 +11,7 @@ const int INDIVIDUAL_TILE_FREQ = 2;
 const int INITIAL_N_OWNED_TILES = 14;
 const int MIN_SET_SIZE = 3;
 const int MAX_GROUP_SIZE = 4;
+const int MIN_FIRST_MOVE_SUM = 30;
 const std::array<Color, NUM_COLORS> ALL_COLORS = {Color::Black, 
                                                   Color::Red,
                                                   Color::Blue,

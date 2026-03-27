@@ -5,7 +5,6 @@
 #include "Utils.hpp"
 #include <algorithm>
 #include <cassert>
-#include <new>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -21,6 +20,7 @@ Player::Player(std::string nme) : name(nme),
 std::string Player::get_name() const { return name; }
 
 void Player::inital_draw(TilesBag& bag) {
+  std::cout << get_name() << ", draw your initial tiles.\n";
   for (int i = 0; i < INITIAL_N_OWNED_TILES; ++i) {
     draw_tile(bag);
   }
@@ -42,6 +42,8 @@ void Player::make_first_move() { hasMadeFirstMove = true; }
 bool Player::made_first_move() const { return hasMadeFirstMove; }
 
 int Player::n_owned_tiles() const { return nOwnedTiles; }
+
+bool Player::placed_all_tiles() const { return n_owned_tiles() == 0; }
 
 /************************************************/
 
@@ -337,25 +339,52 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
                  bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
 
+  bool mustDraw = false;
   Board newBoard;
 
-  for (int i = 0; i < bestSetIndexToUseFreq.size(); ++i) {
-    for (int freq = 0; freq < bestSetIndexToUseFreq[i]; ++freq) {
-      newBoard.add_set(allSets[i]);
+  // If we can't place any tiles we need to draw a tile
+  if (maxHandTilesUsed == 0) {
+    mustDraw = true;
+  }
+
+  // Else we were able to place at least one tile
+  else {
+
+    // Create the new board
+    for (int i = 0; i < bestSetIndexToUseFreq.size(); ++i) {
+      for (int freq = 0; freq < bestSetIndexToUseFreq[i]; ++freq) {
+        newBoard.add_set(allSets[i]);
+      }
+    }
+
+    // If we have not made first move yet, check if sum of placed tiles >= minFirstMoveSum
+    if (!made_first_move()) {
+      int moveSum = 0;
+      for (const Tile& t : newBoard.tiles_on_board()) {
+        moveSum += t.value;
+      }
+      for (const Tile& t : board.tiles_on_board()) {
+        moveSum -= t.value;
+      }
+      if (moveSum < MIN_FIRST_MOVE_SUM) {
+        std::cout << "Your placed tiles must sum to at least "
+                  << MIN_FIRST_MOVE_SUM << " on your first move. ";
+        mustDraw = true;
+      }
     }
   }
 
-  if (maxHandTilesUsed > 0) {
+  if (mustDraw) {
+    std::cout << "You have no moves left, draw a tile.\n";
+    draw_tile(bag);
+  }
+
+  else {
     std::cout << "Was able to place " << maxHandTilesUsed << " tiles." << std::endl;
     decrease_tiles(maxHandTilesUsed);
     board = std::move(newBoard);
   }
   
-  else {
-    std::cout << "You have no moves left, draw a tile." << std::endl;
-    draw_tile(bag);
-  }
-
   std::cout << "Current Board: " << std::endl;
   board.print();
 }
@@ -371,28 +400,18 @@ void AIPlayer::find_best_move(
     const int               allSetsIndex
 ) const {
 
-  // Iterate over allSets, try to use set i. For that check if each tile has availableTiles[tile] >= 1
-    // If yes -> 'use' that set and decrease available tiles for each tile and boardTiles for each tile that still has positive value in the map
-      // If every entry in boardTiles has value 0 we have a valid board -> max = max(currentUsedTiles, previousMax), save bestBoard if max updated
-    // If no -> try next set
-    // If we ever manage to place <handSize> tiles -> break
-
   if (allSetsIndex >= allSets.size()) {
-    // std::cout << "Reached the end of vector.\n"; // DEBUG
     return;
   }
 
+  // Check if we placed all necessary tiles
   if (all_original_tiles_placed(boardTiles)) {
-    // std::cout << "Placed all" << std::endl;
-    // If yes count how many tiles we placed and update best move accordingly
+    // If yes count how many hand tiles we placed and update best move accordingly
     int tilesOnBoard = 0;
     for (int i = 0; i < setIndexToUseFreq.size(); i++) {
       tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
     }
     const int nHandTilesUsed = tilesOnBoard - initialBoardSize;
-    // std::cout << "Tiles on board = " << tilesOnBoard << std::endl;
-    // std::cout << "Initial board size = " << initialBoardSize << std::endl;
-    // std::cout << "Tiles used = " << nHandTilesUsed << std::endl;
     assert(nHandTilesUsed >= 0);
     if (nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
