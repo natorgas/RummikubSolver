@@ -12,6 +12,10 @@ int main() {
   
   TilesBag bag;
 
+  HumanPlayer p("Ivo");
+  p.inital_draw(bag);
+  p.play_turn(board, bag);
+
   int nPlayers;
   std::cout << "How many players are playing?\n";
   std::cin >> nPlayers;

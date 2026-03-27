@@ -69,10 +69,6 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     // If move is valid, realize the change
     board = std::move(boardCopy);
 
-    if (!made_first_move()) {
-      make_first_move();
-    }
-
     bool DONE = false;
 
     while (true) {
@@ -92,7 +88,7 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
 
         // If inclusion not satisfied, reset board and start over
         if (!std::includes(tilesOnNewBoard.begin(), tilesOnNewBoard.end(),
-              tilesOnOldBoard.begin(), tilesOnOldBoard.end())) {
+                           tilesOnOldBoard.begin(), tilesOnOldBoard.end())) {
           std::cout << "You need to place down all tiles that you picked up by 'removing'" << std::endl;
           std::cout << "Board was reset, start yor turn from the beginning.\n";
           board = initialBoard;
@@ -109,7 +105,21 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     }
 
     if (DONE) {
+      // If first turn was not made yet, make minFirstMoveSum is placed
+      if (!made_first_move()) {
+        const int sumOfPlacedTilesValues = val_sum_of_placed_tiles(initialBoard, board);
+        if (sumOfPlacedTilesValues < MIN_FIRST_MOVE_SUM) {
+          std::cout << "You must place down tiles worth "
+                    << MIN_FIRST_MOVE_SUM
+                    << " on your first move. Board has been reset, try again.\n";
+          board = initialBoard;
+          continue;
+        }
+      }
+
+      // Else decrease tiles and end the turn
       decrease_tiles(board.size() - initialBoard.size());
+      make_first_move();
       break;
     }
   }
@@ -359,13 +369,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
     // If we have not made first move yet, check if sum of placed tiles >= minFirstMoveSum
     if (!made_first_move()) {
-      int moveSum = 0;
-      for (const Tile& t : newBoard.tiles_on_board()) {
-        moveSum += t.value;
-      }
-      for (const Tile& t : board.tiles_on_board()) {
-        moveSum -= t.value;
-      }
+      int moveSum = val_sum_of_placed_tiles(board, newBoard);
       if (moveSum < MIN_FIRST_MOVE_SUM) {
         std::cout << "Your placed tiles must sum to at least "
                   << MIN_FIRST_MOVE_SUM << " on your first move. ";

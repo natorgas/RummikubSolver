@@ -60,21 +60,9 @@ inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
       return false;
     }
 
-    // Enforce that first move must be worth >= 30 points
-    if (!madeFristMove) {
-      int tileValueSum = 0;
-      for (const Tile& t : vec) {
-        tileValueSum += t.value;
-      }
-      if (tileValueSum < 30) {
-        std::cout << "Your first move must be worth 30 points. Try again.\n";
-        return false;
-      }
-    }
-
     for (int i = 0; i < jokersUsed; ++i) {
       assert(madeFristMove);
-      std::cout << "Enter the tile you want to replace in the format 'value color'.\n";
+      std::cout << "Enter the tile you want to replace with a joker in the format 'value color'.\n";
 
       int val;
       std::string c;
@@ -84,6 +72,7 @@ inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
 
       // Search for the tile in the vector
       auto it = std::find(vec.begin(), vec.end(), Tile(val, col));
+
       // If not found, tell user to try again
       if (it == vec.end()) {
         std::cout << "This tile is not needed for what you want to create. Try again.\n";
@@ -228,6 +217,17 @@ inline bool have_winner(const std::vector<std::unique_ptr<Player>>& players) {
     if (player_p->placed_all_tiles()) return true;
   }
   return false;
+}
+
+inline int val_sum_of_placed_tiles(const Board& oldBoard, const Board& newBoard) {
+  int valSum = 0;
+  for (const Tile& t : newBoard.tiles_on_board()) {
+    valSum += t.value;
+  }
+  for (const Tile& t : oldBoard.tiles_on_board()) {
+    valSum -= t.value;
+  }
+  return valSum;
 }
 
 #endif
