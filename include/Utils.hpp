@@ -101,13 +101,12 @@ inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, c
     }
   }
 
-  // Perfect group templates using your Color enum directly.
   std::vector<std::vector<Color>> perfectGroups = {
     {Color::Red, Color::Blue, Color::Black, Color::Orange}, // Group of 4
     {Color::Red, Color::Blue, Color::Black},                // Group of 3 (Missing ORANGE)
     {Color::Red, Color::Blue, Color::Orange},               // Group of 3 (Missing BLACK)
     {Color::Red, Color::Black, Color::Orange},              // Group of 3 (Missing BLUE)
-    {Color::Red, Color::Black, Color::Orange}               // Group of 3 (Missing RED)
+    {Color::Blue, Color::Black, Color::Orange}              // Group of 3 (Missing RED)
   };
 
   // Try to build each perfect group

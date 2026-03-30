@@ -109,6 +109,11 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     }
 
     if (DONE) {
+      int tilesPlaced = board.size() - initialBoard.size();
+      if (tilesPlaced == 0) {
+        break; // Player skipped or only drew a tile
+      }
+
       // If first turn was not made yet, make minFirstMoveSum is placed
       if (!made_first_move()) {
         const int sumOfPlacedTilesValues = val_sum_of_placed_tiles(initialBoard, board);
@@ -122,7 +127,7 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
       }
 
       // Else decrease tiles and end the turn
-      decrease_tiles(board.size() - initialBoard.size());
+      decrease_tiles(tilesPlaced);
       make_first_move();
       break;
     }
@@ -410,6 +415,9 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
     std::cout << "Was able to place " << maxHandTilesUsed << " tiles." << std::endl;
     decrease_tiles(maxHandTilesUsed);
     board = std::move(newBoard);
+    if (!made_first_move()) {
+      make_first_move();
+    }
   }
   
   std::cout << "Current Board: " << std::endl;
@@ -443,6 +451,7 @@ void AIPlayer::find_best_move(
     if (nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
+      std::cout << "Can place " << maxHandTilesUsed << std::endl;
 
       // If we used all tiles on hand, we won
       if (maxHandTilesUsed == n_owned_tiles()) {
@@ -505,7 +514,6 @@ void AIPlayer::find_best_move(
   // We go to next set independently of whether or not we were able to place current set
   find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                  setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1);
-
 }
 
 /******************************************************/
