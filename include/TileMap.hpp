@@ -16,6 +16,9 @@ class TileMap {
 
     const int& operator[](const Tile& t) const;
 
+    auto begin() { return map.begin(); }
+    auto end() { return map.end(); }
+
   private:
     int index(const Tile& t) const;
     std::array<int, N_DIFF_TILES> map;

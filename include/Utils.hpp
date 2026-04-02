@@ -4,6 +4,7 @@
 #include "GameTypes.hpp"
 #include "Constants.hpp"
 #include "Player.hpp"
+#include <array>
 #include <string>
 #include <algorithm>
 #include <iostream>
@@ -11,6 +12,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 
 inline void to_lower(std::string& str) {
   std::transform(str.begin(), str.end(), str.begin(),
@@ -142,11 +144,11 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
 
   Color runColor = tilesOfColor[0].color;
 
-  std::map<int, Tile> valueToTile; 
+  std::array<std::optional<Tile>, MAX_TILE_VALUE+1> valueToTile{};
+
   for (const auto& tile : tilesOfColor) {
-    if (tile.value >= MIN_TILE_VALUE && tile.value <= MAX_TILE_VALUE) {
-      valueToTile.insert_or_assign(tile.value, tile); 
-    }
+    assert(!tile.isJoker);
+    valueToTile[tile.value] = tile;
   }
 
   // Top-down generation with early pruning
@@ -156,9 +158,10 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
 
     // Pre-fill the first two tiles of the sequence (a run needs at least 3)
     for (int v = start; v < start + 2; ++v) {
-      if (valueToTile.count(v)) {
-        currentRun.push_back(valueToTile.at(v));
-      } else {
+      if (valueToTile[v]) {
+        currentRun.push_back(valueToTile[v].value());
+      } 
+      else {
         jokersNeeded++;
         currentRun.push_back(Tile(v, runColor, true));
       }
@@ -168,9 +171,10 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
     for (int end = start + 2; end <= 13; ++end) {
 
       // Add the next tile to our rolling sequence
-      if (valueToTile.count(end)) {
-        currentRun.push_back(valueToTile.at(end));
-      } else {
+      if (valueToTile[end]) {
+        currentRun.push_back(valueToTile[end].value());
+      } 
+      else {
         jokersNeeded++;
         currentRun.push_back(Tile(end, runColor, true));
       }
@@ -180,8 +184,7 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
         break; 
       }
 
-      // 4. If we made it here, it's a valid Rummikub run. Save a copy!
-      if (jokersNeeded < currentRun.size()) {
+      if (currentRun.size() >= MIN_SET_SIZE) {
         allRuns.push_back(Set(SetType::Run, currentRun));
       }
     }
@@ -232,9 +235,9 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
   return allSets;
 }
 
-inline bool set_can_be_placed(const Set& set, const std::map<Tile, int>& availableTiles) {
+inline bool set_can_be_placed(const Set& set, const TileMap& availableTiles) {
 
-  std::map<Tile, int> tilesNeededForThisSet;
+  TileMap tilesNeededForThisSet;
 
   for (Tile t : set.tiles) {
 
@@ -246,10 +249,7 @@ inline bool set_can_be_placed(const Set& set, const std::map<Tile, int>& availab
 
     tilesNeededForThisSet[t]++;
 
-    int availableAmount = 0;
-    if (availableTiles.count(t)) {
-      availableAmount = availableTiles.at(t);
-    }
+    int availableAmount = availableTiles[t];
 
     if (tilesNeededForThisSet[t] > availableAmount) {
       return false;
@@ -258,8 +258,8 @@ inline bool set_can_be_placed(const Set& set, const std::map<Tile, int>& availab
   return true;
 }
 
-inline bool all_original_tiles_placed(std::map<Tile, int>& boardTiles) {
-  for (const auto& [tile, freq] : boardTiles) {
+inline bool all_original_tiles_placed(TileMap& boardTiles) {
+  for (const auto& freq : boardTiles) {
     if (freq != 0) return false;
   }
   return true;

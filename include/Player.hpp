@@ -2,7 +2,7 @@
 #define PLAYER_H
 #include <string>
 #include <vector>
-#include <map>
+#include "TileMap.hpp"
 #include "GameTypes.hpp"
 #include "TilesBag.hpp"
 
@@ -89,8 +89,8 @@ class AIPlayer: public Player {
     void find_best_move(
         const std::vector<Set>& allSets, 
         const int               initialBoardSize,
-        std::map<Tile, int>&    boardTiles,
-        std::map<Tile, int>&    allTiles,
+        TileMap&                boardTiles,
+        TileMap&                allTiles,
         std::vector<int>&       setIndexToUseFreq,
         std::vector<int>&       bestSetIndexToUseFreq,
         int&                    maxHandTilesUsed,

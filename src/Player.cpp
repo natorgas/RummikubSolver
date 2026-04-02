@@ -3,6 +3,7 @@
 #include "GameTypes.hpp"
 #include "TilesBag.hpp"
 #include "Utils.hpp"
+#include "TileMap.hpp"
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -350,10 +351,10 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   normalize_jokers(tilesOnBoard);
 
   // Frequency of all tiles that can be used to build sets
-  std::map<Tile, int> allTiles;
+  TileMap allTiles;
 
   // Must all be placed -> need every entry to have freq = 0 (all placed)
-  std::map<Tile, int> boardTiles;
+  TileMap boardTiles;
 
   for (const Tile& t : tilesOnBoard) {
     boardTiles[t]++;
@@ -432,8 +433,8 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 void AIPlayer::find_best_move(
     const std::vector<Set>& allSets, 
     const int               initialBoardSize,
-    std::map<Tile, int>&    boardTiles,
-    std::map<Tile, int>&    availableTiles,
+    TileMap&                boardTiles,
+    TileMap&                availableTiles,
     std::vector<int>&       setIndexToUseFreq,
     std::vector<int>&       bestSetIndexToUseFreq,
     int&                    maxHandTilesUsed,
