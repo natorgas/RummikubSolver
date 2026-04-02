@@ -2,6 +2,7 @@
 #define PLAYER_H
 #include <string>
 #include <vector>
+#include <chrono>
 #include "TileMap.hpp"
 #include "GameTypes.hpp"
 #include "TilesBag.hpp"
@@ -86,7 +87,7 @@ class AIPlayer: public Player {
   private:
     bool draw_tile(TilesBag& bag) override;
 
-    void find_best_move(
+    bool find_best_move(
         const std::vector<Set>& allSets, 
         const int               initialBoardSize,
         TileMap&                boardTiles,
@@ -94,10 +95,15 @@ class AIPlayer: public Player {
         std::vector<int>&       setIndexToUseFreq,
         std::vector<int>&       bestSetIndexToUseFreq,
         int&                    maxHandTilesUsed,
-        const int               allSetsIndex
-    ) const;
+        const int               allSetsIndex,
+        const std::chrono::high_resolution_clock::time_point& startTime
+    );
 
     std::vector<Tile> hand;
+
+    // Used for controlling time used by find_best_move
+    // unsigned for defined overflow
+    unsigned int stepCounter;
 };
 
 /******************************************************/

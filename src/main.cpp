@@ -43,6 +43,12 @@ int main() {
                            Tile(9, Color::Black), 
                            Tile(10, Color::Black), 
                            Tile(11, Color::Black, true)});
+
+  Set s8(SetType::Run,   { Tile(7, Color::Black),
+                           Tile(8, Color::Black), 
+                           Tile(9, Color::Black), 
+                           Tile(10, Color::Black), 
+                           Tile(11, Color::Black, true)});
   board.add_set(s1);
   board.add_set(s2);
   board.add_set(s3);
@@ -50,6 +56,7 @@ int main() {
   board.add_set(s5);
   board.add_set(s6);
   board.add_set(s7);
+  board.add_set(s8);
   
   TilesBag bag;
 

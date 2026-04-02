@@ -9,8 +9,8 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <map>
-
+#include <iomanip>
+#include <chrono>
 
 /********************* Player *******************/
 
@@ -308,7 +308,7 @@ bool HumanPlayer::remove_run(Board& boardCopy) {
 
 /********************* Player -> AI *******************/
 
-AIPlayer::AIPlayer(std::string nme) : Player(nme) {}
+AIPlayer::AIPlayer(std::string nme) : hand({}), stepCounter(0), Player(nme) {}
 
 bool AIPlayer::draw_tile(TilesBag& bag) {
   std::cout << "Enter the tile (either 'Joker' or 'value color'):\n";
@@ -376,8 +376,18 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   std::sort(allSets.begin(), allSets.end(), 
             [](const Set& a, const Set& b){ return a.size() > b.size(); });
 
+  auto startTime = std::chrono::high_resolution_clock::now();
+
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
-                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
+                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime);
+
+  auto endTime = std::chrono::high_resolution_clock::now();
+
+  // Calculate time used by find_best_move
+  std::chrono::duration<double> duration = endTime - startTime;
+
+  std::cout << std::fixed << std::setprecision(2);
+  std::cout << "Execution time: " << duration.count() << " s\n";
 
   bool mustDraw = false;
   Board newBoard;
@@ -430,7 +440,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   board.print();
 }
 
-void AIPlayer::find_best_move(
+bool AIPlayer::find_best_move(
     const std::vector<Set>& allSets, 
     const int               initialBoardSize,
     TileMap&                boardTiles,
@@ -438,11 +448,21 @@ void AIPlayer::find_best_move(
     std::vector<int>&       setIndexToUseFreq,
     std::vector<int>&       bestSetIndexToUseFreq,
     int&                    maxHandTilesUsed,
-    const int               allSetsIndex
-) const {
+    const int               allSetsIndex,
+    const std::chrono::high_resolution_clock::time_point& startTime
+) {
+
+  // Check how long we have been looking for the best move
+  if (++stepCounter % 1000 == 0) {
+    auto now = std::chrono::high_resolution_clock::now();
+    if (now - startTime > std::chrono::duration<double>(TIME_LIMIT)) {
+      std::cout << "Exceeded time limit of " << TIME_LIMIT << " seconds.\n";
+      return true;
+    }
+  }
 
   if (allSetsIndex >= allSets.size()) {
-    return;
+    return false;
   }
 
   // Check if we placed all necessary tiles
@@ -462,7 +482,7 @@ void AIPlayer::find_best_move(
       // If we used all tiles on hand, we won
       if (maxHandTilesUsed == n_owned_tiles()) {
         std::cout << get_name() << " won!\n";
-        return;
+        return true;
       }
     }
   }
@@ -498,8 +518,10 @@ void AIPlayer::find_best_move(
     }
 
     // Go to next set
-    find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                   setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex);
+    if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
+                       setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime)) {
+      return true;
+    }
 
     // If we return from the upper function => placing this set did not work out, remove it
     setIndexToUseFreq[allSetsIndex]--;
@@ -518,8 +540,11 @@ void AIPlayer::find_best_move(
   }
   
   // We go to next set independently of whether or not we were able to place current set
-  find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                 setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1);
+  if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
+                     setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1, startTime)) {
+    return true;
+  }
+  return false;
 }
 
 /******************************************************/
