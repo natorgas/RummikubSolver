@@ -371,6 +371,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   int maxHandTilesUsed = 0;
   const int allSetsIndex = 0;
 
+  // Sort in descending order (heuristic)
   std::sort(allSets.begin(), allSets.end(), 
             [](const Set& a, const Set& b){ return a.size() > b.size(); });
 
@@ -387,7 +388,6 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   // Else we were able to place at least one tile
   else {
-
     // Create the new board
     for (int i = 0; i < bestSetIndexToUseFreq.size(); ++i) {
       for (int freq = 0; freq < bestSetIndexToUseFreq[i]; ++freq) {
@@ -408,7 +408,12 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   if (mustDraw) {
     std::cout << "You have no moves left, draw a tile.\n";
-    draw_tile(bag);
+    if (!bag.is_empty()) {
+      draw_tile(bag);
+    }
+    else {
+      std::cout << "You have no moves left and the bag is empty, this is the last round.\n";
+    }
   }
 
   else {

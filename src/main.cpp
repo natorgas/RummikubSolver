@@ -73,6 +73,7 @@ int main() {
     }
   }
 
+  // General information to the user
   std::cout << "Values go from " << MIN_TILE_VALUE << " to " << MAX_TILE_VALUE << ".\n";
   std::cout << "Colors are: ";
   for (const Color& c : ALL_COLORS) {
@@ -88,17 +89,19 @@ int main() {
 
   bool gameOver = false;
 
+  // Start the game
   while (!gameOver) {
     for (auto& player_p : players) {
       player_p->play_turn(board,  bag);
+      exit(0);
       if (player_p->placed_all_tiles()) {
+        std::cout << player_p->get_name() << ", wins. Congrats!\n";
         std::cout << "'The game is over' -Babu\n";
         gameOver = true;
         break;
       }
     }
   }
-
 
   return 0;
 }

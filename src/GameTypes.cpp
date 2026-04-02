@@ -1,10 +1,8 @@
 #include "GameTypes.hpp"
 #include "Constants.hpp"
 #include "Utils.hpp"
-#include <cstdlib>
 #include <iostream>
 #include <cassert>
-#include <iterator>
 #include <ostream>
 #include <vector>
 #include <set>
@@ -90,7 +88,6 @@ bool Set::valid() const {
         return false;
       }
     }
-
   }
 
   return true;

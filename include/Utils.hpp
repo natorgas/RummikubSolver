@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
-#include <set>
 #include <cassert>
 #include <map>
 #include <memory>
@@ -118,12 +117,11 @@ inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, c
     for (Color colorNeeded : groupTemplate) {
 
       if (colorToTile.count(colorNeeded)) {
-        // We have the physical tile, add it using .at() to avoid default constructor errors
+        // We have the physical tile
         currentGroup.push_back(colorToTile.at(colorNeeded));
       } else {
         // Else use a joker
         jokersNeeded++;
-
         currentGroup.emplace_back(Tile(numberValue, colorNeeded, true));
       }
     }
