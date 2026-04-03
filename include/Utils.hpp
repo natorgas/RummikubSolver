@@ -55,14 +55,7 @@ inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
       continue;
     }
 
-    // Make sure no joker used on the first move
-    if (jokersUsed > 0 && !madeFristMove) {
-      std::cout << "You can't use a joker on your first move. Try again.\n";
-      return false;
-    }
-
     for (int i = 0; i < jokersUsed; ++i) {
-      assert(madeFristMove);
       std::cout << "Enter the tile you want to replace with a joker in the format 'value color'.\n";
 
       int val;
@@ -89,10 +82,10 @@ inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
 
 inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, const int nJokers) {
   std::vector<Set> allGroups;
-  if (tilesOfValue.empty()) return allGroups;
+  if (tilesOfValue.empty() && nJokers < MIN_SET_SIZE) return allGroups;
 
   // All tiles in this vector share the same number.
-  int numberValue = tilesOfValue[0].value;
+  int numberValue = tilesOfValue.empty() ? 0 : tilesOfValue[0].value;
 
   // Using a map ensures we automatically drop duplicate colors.
   std::map<Color, Tile> colorToTile; 
@@ -112,26 +105,34 @@ inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, c
 
   // Try to build each perfect group
   for (const auto& groupTemplate : perfectGroups) {
-    std::vector<Tile> currentGroup;
-    int jokersNeeded = 0;
+    int templateSize = groupTemplate.size();
+    
+    // Use a bitmask to try all combinations of Real vs Joker for each color in the template
+    for (int mask = 0; mask < (1 << templateSize); ++mask) {
+      std::vector<Tile> currentGroup;
+      int jokersUsed = 0;
+      bool possible = true;
 
-    // Iterate directly through the requested Colors
-    for (Color colorNeeded : groupTemplate) {
-
-      if (colorToTile.count(colorNeeded)) {
-        // We have the physical tile
-        currentGroup.push_back(colorToTile.at(colorNeeded));
-      } else {
-        // Else use a joker
-        jokersNeeded++;
-        currentGroup.emplace_back(Tile(numberValue, colorNeeded, true));
+      for (int i = 0; i < templateSize; ++i) {
+        Color colorNeeded = groupTemplate[i];
+        if (mask & (1 << i)) {
+          // Use Joker
+          jokersUsed++;
+          currentGroup.emplace_back(Tile(numberValue, colorNeeded, true));
+        } else {
+          // Use Real
+          if (colorToTile.count(colorNeeded)) {
+            currentGroup.push_back(colorToTile.at(colorNeeded));
+          } else {
+            possible = false;
+            break;
+          }
+        }
       }
-    }
 
-    // If we didn't use too many jokers, add this group to allGroups
-    assert(nJokers <= INDIVIDUAL_TILE_FREQ);
-    if (jokersNeeded <= nJokers && jokersNeeded < groupTemplate.size()) {
-      allGroups.push_back(Set(SetType::Group, currentGroup));
+      if (possible && jokersUsed <= nJokers && jokersUsed < templateSize) {
+        allGroups.push_back(Set(SetType::Group, currentGroup));
+      }
     }
   }
 
@@ -140,12 +141,11 @@ inline std::vector<Set> generate_groups(const std::vector<Tile>& tilesOfValue, c
 
 inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, const int nJokers) {
   std::vector<Set> allRuns;
-  if (tilesOfColor.empty()) return allRuns;
+  if (tilesOfColor.empty() && nJokers < MIN_SET_SIZE) return allRuns;
 
-  Color runColor = tilesOfColor[0].color;
+  Color runColor = tilesOfColor.empty() ? Color::None : tilesOfColor[0].color;
 
   std::array<std::optional<Tile>, MAX_TILE_VALUE+1> valueToTile{};
-
   for (const auto& tile : tilesOfColor) {
     assert(!tile.isJoker);
     valueToTile[tile.value] = tile;
@@ -153,40 +153,44 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
 
   // Top-down generation with early pruning
   for (int start = MIN_TILE_VALUE; start <= MAX_TILE_VALUE - MIN_SET_SIZE + 1; ++start) {
+    
     std::vector<Tile> currentRun;
-    int jokersNeeded = 0;
+    
+    // Helper to explore all combinations of Jokers for a fixed start/end
+    auto explore = [&](auto self, int currentVal, int jokersUsed) -> void {
+      if (currentVal > MAX_TILE_VALUE) return;
 
-    // Pre-fill the first two tiles of the sequence (a run needs at least 3)
-    for (int v = start; v < start + 2; ++v) {
-      if (valueToTile[v]) {
-        currentRun.push_back(valueToTile[v].value());
-      } 
-      else {
-        jokersNeeded++;
-        currentRun.push_back(Tile(v, runColor, true));
+      // Try using the real tile if available
+      if (valueToTile[currentVal]) {
+        currentRun.push_back(valueToTile[currentVal].value());
+        if (currentRun.size() >= MIN_SET_SIZE) {
+          allRuns.push_back(Set(SetType::Run, currentRun));
+        }
+        self(self, currentVal + 1, jokersUsed);
+        currentRun.pop_back();
       }
+
+      // Try using a joker if available
+      if (jokersUsed < nJokers) {
+        currentRun.push_back(Tile(currentVal, runColor, true));
+        if (currentRun.size() >= MIN_SET_SIZE) {
+          allRuns.push_back(Set(SetType::Run, currentRun));
+        }
+        self(self, currentVal + 1, jokersUsed + 1);
+        currentRun.pop_back();
+      }
+    };
+
+    // Initialize with first tile (either real or joker)
+    if (valueToTile[start]) {
+      currentRun.push_back(valueToTile[start].value());
+      explore(explore, start + 1, 0);
+      currentRun.pop_back();
     }
-
-    // Now expand the run one tile at a time
-    for (int end = start + 2; end <= 13; ++end) {
-
-      // Add the next tile to our rolling sequence
-      if (valueToTile[end]) {
-        currentRun.push_back(valueToTile[end].value());
-      } 
-      else {
-        jokersNeeded++;
-        currentRun.push_back(Tile(end, runColor, true));
-      }
-
-      // Any longer sequence starting at this 'start' will also be invalid.
-      if (jokersNeeded > nJokers) {
-        break; 
-      }
-
-      if (currentRun.size() >= MIN_SET_SIZE) {
-        allRuns.push_back(Set(SetType::Run, currentRun));
-      }
+    if (nJokers > 0) {
+      currentRun.push_back(Tile(start, runColor, true));
+      explore(explore, start + 1, 1);
+      currentRun.pop_back();
     }
   }
   return allRuns;
@@ -290,6 +294,40 @@ inline void normalize_jokers(std::vector<Tile>& tiles) {
       t.value = 0;
     }
   }
+}
+
+inline std::vector<Tile> get_newly_placed_tiles(const Board& oldBoard, const Board& newBoard) {
+  std::vector<Tile> newlyPlacedTiles;
+  TileMap map;
+
+  std::vector<Tile> oldTiles = oldBoard.tiles_on_board();
+  std::vector<Tile> newTiles = newBoard.tiles_on_board();
+
+  normalize_jokers(oldTiles);
+  normalize_jokers(newTiles);
+
+  for (const Tile& t : newTiles) {
+    map[t]++;
+  }
+  for (const Tile& t : oldTiles) {
+    map[t]--;
+  }
+
+  Tile joker(0, Color::None, true);
+  for (int j = 0; j < map[joker]; ++j) {
+    newlyPlacedTiles.emplace_back(joker);
+  }
+
+  for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
+    for (Color c : ALL_COLORS) {
+      Tile t(val, c);
+      for (int j = 0; j < map[t]; ++j) {
+        newlyPlacedTiles.emplace_back(t);
+      }
+    }
+  }
+
+  return newlyPlacedTiles;
 }
 
 #endif

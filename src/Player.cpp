@@ -15,7 +15,7 @@
 /********************* Player *******************/
 
 Player::Player(std::string nme) : name(nme), 
-                                  hasMadeFirstMove(false), 
+                                  hasMadeFirstMove(true), 
                                   nOwnedTiles(0) {}
 
 std::string Player::get_name() const { return name; }
@@ -462,10 +462,20 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   else {
     std::cout << "Was able to place " << maxHandTilesUsed << " tiles." << std::endl;
     decrease_tiles(maxHandTilesUsed);
+
+    std::vector<Tile> newlyPlacedTiles = get_newly_placed_tiles(board, newBoard); 
+
     board = std::move(newBoard);
     if (!made_first_move()) {
       make_first_move();
     }
+
+    // Remove used tiles from our hand
+    for (const Tile& toErase : newlyPlacedTiles) {
+      auto it = std::find(hand.begin(), hand.end(), toErase);
+      assert(it != hand.end());
+      hand.erase(it);
+    } 
   }
   
   std::cout << "Current Board: " << std::endl;
@@ -503,9 +513,14 @@ bool AIPlayer::find_best_move(
     int tilesOnBoard = 0;
     int currentBoardValSum = 0;
 
+    // Calculate number of tiles on board
     for (int i = 0; i < setIndexToUseFreq.size(); i++) {
       tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
-      if (setIndexToUseFreq[i] > 0) {
+    }
+
+    // If we have not made first move, additionally calculate the sum of values of all tiles
+    if (!made_first_move()) {
+      for (int i = 0; i < setIndexToUseFreq.size(); i++) {
         for (const Tile& t : allSets[i].tiles) {
           currentBoardValSum += t.value * setIndexToUseFreq[i];
         }
@@ -516,10 +531,13 @@ bool AIPlayer::find_best_move(
     assert(nHandTilesUsed >= 0);
 
     bool isValidMove = true;
+
+    // If we have not made first move and we dont meet the minimum sum requirement, mark this move as invalid
     if (!made_first_move() && (currentBoardValSum - initialBoardValSum < MIN_FIRST_MOVE_SUM)) {
       isValidMove = false;
     }
 
+    // Only consider a valid move that improves the number of tiles we place
     if (isValidMove && nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;

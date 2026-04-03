@@ -3,6 +3,7 @@
 #include "TilesBag.hpp"
 #include "Constants.hpp"
 #include "Utils.hpp"
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -32,7 +33,7 @@ int main() {
                            Tile(8, Color::Red), 
                            Tile(9, Color::Red), 
                            Tile(10, Color::Red)});
-  
+
   Set s6(SetType::Run,   { Tile(3, Color::Blue),
                            Tile(4, Color::Blue), 
                            Tile(5, Color::Blue)});
@@ -53,11 +54,11 @@ int main() {
   board.add_set(s3);
   board.add_set(s4);
   board.add_set(s5);
-  board.add_set(s6);
+  // board.add_set(s6);
   board.add_set(s7);
-  board.add_set(s8);
-  board.add_set(s2);
-  board.add_set(s5);
+  // board.add_set(s8);
+  // board.add_set(s2);
+  // board.add_set(s5);
   
   TilesBag bag;
 
@@ -105,8 +106,9 @@ int main() {
   while (!gameOver) {
     for (auto& player_p : players) {
       player_p->play_turn(board, bag);
+      exit(0);
       if (player_p->placed_all_tiles()) {
-        std::cout << player_p->get_name() << ", wins. Congrats!\n"
+        std::cout << player_p->get_name() << " wins. Congrats!\n"
                   << "'The game is over' -Babu\n";
         gameOver = true;
         break;
