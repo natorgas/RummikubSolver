@@ -317,9 +317,8 @@ bool AIPlayer::draw_tile(TilesBag& bag) {
   std::cin >> input;
 
   if (input == "Joker" || input == "joker") {
-    Tile jokerTile(0, Color::None, true); // or however you represent it
+    Tile jokerTile(0, Color::None, true);
     hand.push_back(jokerTile);
-    bag.remove_tile(jokerTile);
   }
 
   else {
@@ -332,7 +331,6 @@ bool AIPlayer::draw_tile(TilesBag& bag) {
 
     Tile drawnTile(val, col);
     hand.push_back(drawnTile);
-    bag.remove_tile(drawnTile);
   }
 
   bag.draw();
@@ -423,7 +421,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
       draw_tile(bag);
     }
     else {
-      std::cout << "You have no moves left and the bag is empty, this is the last round.\n";
+      std::cout << "You have no moves left and the bag is empty.\n";
     }
   }
 
@@ -517,7 +515,7 @@ bool AIPlayer::find_best_move(
       }
     }
 
-    // Go to next set
+    // Try this set again
     if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                        setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime)) {
       return true;

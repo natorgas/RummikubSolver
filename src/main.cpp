@@ -3,7 +3,6 @@
 #include "TilesBag.hpp"
 #include "Constants.hpp"
 #include "Utils.hpp"
-#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -57,6 +56,8 @@ int main() {
   board.add_set(s6);
   board.add_set(s7);
   board.add_set(s8);
+  board.add_set(s2);
+  board.add_set(s5);
   
   TilesBag bag;
 
@@ -80,6 +81,10 @@ int main() {
     }
   }
 
+  // Ask user how long much time they are willing to wait for answer of AI
+  std::cout << "Wie lang magsch warte? (in seconds): ";
+  std::cin >> TIME_LIMIT;
+
   // General information to the user
   std::cout << "Values go from " << MIN_TILE_VALUE << " to " << MAX_TILE_VALUE << ".\n";
   std::cout << "Colors are: ";
@@ -99,11 +104,10 @@ int main() {
   // Start the game
   while (!gameOver) {
     for (auto& player_p : players) {
-      player_p->play_turn(board,  bag);
-      exit(0);
+      player_p->play_turn(board, bag);
       if (player_p->placed_all_tiles()) {
-        std::cout << player_p->get_name() << ", wins. Congrats!\n";
-        std::cout << "'The game is over' -Babu\n";
+        std::cout << player_p->get_name() << ", wins. Congrats!\n"
+                  << "'The game is over' -Babu\n";
         gameOver = true;
         break;
       }
