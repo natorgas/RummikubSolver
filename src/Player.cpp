@@ -73,7 +73,7 @@ void HumanPlayer::play_turn(Board& board, TilesBag& bag) {
     bool DONE = false;
 
     while (true) {
-      std::cout << "Are you done with your turn? [y/n].\n";
+      std::cout << "Are you done with your turn? [y/n]. Enter 'y' if you drew a tile.\n";
       char done;
       std::cin >> done;
 
@@ -152,13 +152,25 @@ bool HumanPlayer::make_move(Board& boardCopy, TilesBag& bag) {
   std::string input;
   std::cin >> input;
 
-  if (input == "cg") return create_group(boardCopy);
+  if (input == "cg") return create_group(boardCopy) ? 1 : 0;
 
-  else if (input == "cr") return create_run(boardCopy);
+  else if (input == "cr") return create_run(boardCopy) ? 1 : 0;
 
-  else if (input == "rg") return remove_group(boardCopy);
+  else if (input == "rg") {
+    if (!made_first_move()) {
+      std::cout << "You cannot modify existing sets on your first move.\n";
+      return 0;
+    }
+    return remove_group(boardCopy) ? 1 : 0;
+  }
 
-  else if (input == "rr") return remove_run(boardCopy);
+  else if (input == "rr") {
+    if (!made_first_move()) {
+      std::cout << "You cannot modify existing sets on your first move.\n";
+      return 0;
+    }
+    return remove_run(boardCopy) ? 1 : 0;
+  }
 
   else if (input == "a")  return true;
   
@@ -173,9 +185,15 @@ bool HumanPlayer::make_move(Board& boardCopy, TilesBag& bag) {
 }
 
 bool HumanPlayer::draw_tile(TilesBag& bag) {
-  bag.draw();
-  increase_tiles(1);
-  return true;
+  if (!bag.is_empty()){
+    bag.draw();
+    increase_tiles(1);
+    return true;
+  }
+  else {
+    std::cout << "Bag is empty. Try again.\n";
+    return false;
+  }
 }
 
 bool HumanPlayer::create_group(Board& boardCopy) {
@@ -340,7 +358,13 @@ bool AIPlayer::draw_tile(TilesBag& bag) {
 }
 
 void AIPlayer::play_turn(Board& board, TilesBag& bag) {
-  std::vector<Tile> tilesOnBoard = board.tiles_on_board();
+  std::vector<Tile> tilesOnBoard = {};
+
+  // Only put board tiles into pool if we have made our first move
+  if (made_first_move()) {
+    tilesOnBoard = board.tiles_on_board();
+  }
+
   std::vector<Tile> pool = tilesOnBoard;
   pool.insert(pool.end(), hand.begin(), hand.end());
 
@@ -364,7 +388,14 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
     allTiles[t]++;
   }
 
-  const int initialBoardSize = board.size();
+  // Don't use board.size, for that case that this is our first move -> need this to be 0
+  const int initialBoardSize = tilesOnBoard.size();
+
+  int initialBoardValSum = 0;
+  for (const Tile& t : tilesOnBoard) {
+    initialBoardValSum += t.value;
+  }
+
   std::vector<int> setIndexToUseFreq(allSets.size(), 0);
   std::vector<int> bestSetIndexToUseFreq(allSets.size(), 0);
   int maxHandTilesUsed = 0;
@@ -377,7 +408,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   auto startTime = std::chrono::high_resolution_clock::now();
 
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
-                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime);
+                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum);
 
   auto endTime = std::chrono::high_resolution_clock::now();
 
@@ -397,7 +428,12 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   // Else we were able to place at least one tile
   else {
-    // Create the new board
+
+    // If we have not made first move yet, copy old board, as we only worked with tiles from our hand on this turn
+    if (!made_first_move()) {
+      newBoard = board;
+    }
+    // Finish the new board
     for (int i = 0; i < bestSetIndexToUseFreq.size(); ++i) {
       for (int freq = 0; freq < bestSetIndexToUseFreq[i]; ++freq) {
         newBoard.add_set(allSets[i]);
@@ -408,8 +444,6 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
     if (!made_first_move()) {
       int moveSum = val_sum_of_placed_tiles(board, newBoard);
       if (moveSum < MIN_FIRST_MOVE_SUM) {
-        std::cout << "Your placed tiles must sum to at least "
-                  << MIN_FIRST_MOVE_SUM << " on your first move. ";
         mustDraw = true;
       }
     }
@@ -447,7 +481,8 @@ bool AIPlayer::find_best_move(
     std::vector<int>&       bestSetIndexToUseFreq,
     int&                    maxHandTilesUsed,
     const int               allSetsIndex,
-    const std::chrono::high_resolution_clock::time_point& startTime
+    const std::chrono::high_resolution_clock::time_point& startTime,
+    const int               initialBoardValSum
 ) {
 
   // Check how long we have been looking for the best move
@@ -465,14 +500,27 @@ bool AIPlayer::find_best_move(
 
   // Check if we placed all necessary tiles
   if (all_original_tiles_placed(boardTiles)) {
-    // If yes count how many hand tiles we placed and update best move accordingly
     int tilesOnBoard = 0;
+    int currentBoardValSum = 0;
+
     for (int i = 0; i < setIndexToUseFreq.size(); i++) {
       tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
+      if (setIndexToUseFreq[i] > 0) {
+        for (const Tile& t : allSets[i].tiles) {
+          currentBoardValSum += t.value * setIndexToUseFreq[i];
+        }
+      }
     }
+
     const int nHandTilesUsed = tilesOnBoard - initialBoardSize;
     assert(nHandTilesUsed >= 0);
-    if (nHandTilesUsed > maxHandTilesUsed) {
+
+    bool isValidMove = true;
+    if (!made_first_move() && (currentBoardValSum - initialBoardValSum < MIN_FIRST_MOVE_SUM)) {
+      isValidMove = false;
+    }
+
+    if (isValidMove && nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
       std::cout << "Can place " << maxHandTilesUsed << std::endl;
@@ -517,7 +565,7 @@ bool AIPlayer::find_best_move(
 
     // Try this set again
     if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                       setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime)) {
+                       setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum)) {
       return true;
     }
 
@@ -539,7 +587,7 @@ bool AIPlayer::find_best_move(
   
   // We go to next set independently of whether or not we were able to place current set
   if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                     setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1, startTime)) {
+                     setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1, startTime, initialBoardValSum)) {
     return true;
   }
   return false;

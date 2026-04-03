@@ -1,6 +1,5 @@
 #include "TilesBag.hpp"
 #include "Constants.hpp"
-#include "GameTypes.hpp"
 #include <cassert>
 
 TilesBag::TilesBag() {

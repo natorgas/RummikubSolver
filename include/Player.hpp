@@ -96,7 +96,8 @@ class AIPlayer: public Player {
         std::vector<int>&       bestSetIndexToUseFreq,
         int&                    maxHandTilesUsed,
         const int               allSetsIndex,
-        const std::chrono::high_resolution_clock::time_point& startTime
+        const std::chrono::high_resolution_clock::time_point& startTime,
+        const int               initialBoardValSum
     );
 
     std::vector<Tile> hand;
