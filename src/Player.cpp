@@ -15,7 +15,7 @@
 /********************* Player *******************/
 
 Player::Player(std::string nme) : name(nme), 
-                                  hasMadeFirstMove(true), 
+                                  hasMadeFirstMove(false), 
                                   nOwnedTiles(0) {}
 
 std::string Player::get_name() const { return name; }
