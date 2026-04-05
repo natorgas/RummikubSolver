@@ -20,14 +20,16 @@ inline void to_lower(std::string& str) {
 }
 
 inline Color str_to_color(std::string& str) {
-  to_lower(str);
-  if (str == "black")       return Color::Black;
-  else if (str == "blue")   return Color::Blue;
-  else if (str == "red")    return Color::Red;
-  else if (str == "orange") return Color::Orange;
-  else {
-    std::cout << str << " cannot be converted to type Color. Returned Color::None.\n";
-    return Color::None;
+  while (true) {
+    to_lower(str);
+    if (str == "black")       return Color::Black;
+    else if (str == "blue")   return Color::Blue;
+    else if (str == "red")    return Color::Red;
+    else if (str == "orange") return Color::Orange;
+    else {
+      std::cout << str << " cannot be converted to type Color. Enter color again: ";
+      std::cin >> str;
+    }
   }
 }
 
@@ -235,6 +237,8 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
     std::vector<Set> allRuns = generate_runs(tilesOfColor, nJokers);
     allSets.insert(allSets.end(), allRuns.begin(), allRuns.end());
   }
+
+  std::cout << "Found " << allSets.size() << " sets.\n";
 
   return allSets;
 }

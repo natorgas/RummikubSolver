@@ -470,12 +470,17 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
       make_first_move();
     }
 
+    std::cout << "Placed tiles:\n";
+
     // Remove used tiles from our hand
     for (const Tile& toErase : newlyPlacedTiles) {
+      toErase.print();
       auto it = std::find(hand.begin(), hand.end(), toErase);
       assert(it != hand.end());
       hand.erase(it);
     } 
+
+    std::cout << std::endl;
   }
   
   std::cout << "Current Board: " << std::endl;
@@ -492,8 +497,7 @@ bool AIPlayer::find_best_move(
     int&                    maxHandTilesUsed,
     const int               allSetsIndex,
     const std::chrono::high_resolution_clock::time_point& startTime,
-    const int               initialBoardValSum
-) {
+    const int               initialBoardValSum) {
 
   // Check how long we have been looking for the best move
   if (++stepCounter % 1000 == 0) {
@@ -610,6 +614,8 @@ bool AIPlayer::find_best_move(
   }
   return false;
 }
+
+void AIPlayer::set_hand(const std::vector<Tile>& v) { hand = v; increase_tiles(v.size()); make_first_move(); }
 
 /******************************************************/
 

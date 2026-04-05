@@ -3,6 +3,7 @@
 #include "TilesBag.hpp"
 #include "Constants.hpp"
 #include "Utils.hpp"
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -10,56 +11,111 @@ int main() {
 
   Board board;
 
-  // Set s1(SetType::Group, { Tile(1, Color::Red),
-  //                          Tile(1, Color::Black), 
-  //                          Tile(1, Color::Orange)});
-  //
-  // Set s2(SetType::Group, { Tile(12, Color::Red),
-  //                          Tile(12, Color::Black), 
-  //                          Tile(12, Color::Blue), 
-  //                          Tile(12, Color::Orange)});
-  //
-  // Set s3(SetType::Group, { Tile(3, Color::Red),
-  //                          Tile(3, Color::Black), 
-  //                          Tile(3, Color::Orange)});
-  //
-  // Set s4(SetType::Group, { Tile(10, Color::Red),
-  //                          Tile(10, Color::Black), 
-  //                          Tile(10, Color::Blue), 
-  //                          Tile(10, Color::Orange)});
-  //
-  // Set s5(SetType::Run,   { Tile(7, Color::Red),
-  //                          Tile(8, Color::Red), 
-  //                          Tile(9, Color::Red), 
-  //                          Tile(10, Color::Red)});
-  //
-  // Set s6(SetType::Run,   { Tile(3, Color::Blue),
-  //                          Tile(4, Color::Blue), 
-  //                          Tile(5, Color::Blue)});
-  //
-  // Set s7(SetType::Run,   { Tile(7, Color::Black),
-  //                          Tile(8, Color::Black), 
-  //                          Tile(9, Color::Black), 
-  //                          Tile(10, Color::Black), 
-  //                          Tile(11, Color::Black, true)});
-  //
-  // Set s8(SetType::Run,   { Tile(7, Color::Black),
-  //                          Tile(8, Color::Black), 
-  //                          Tile(9, Color::Black), 
-  //                          Tile(10, Color::Black), 
-  //                          Tile(11, Color::Black, true)});
-  // board.add_set(s1);
-  // board.add_set(s2);
-  // board.add_set(s3);
-  // board.add_set(s4);
-  // board.add_set(s5);
-  // board.add_set(s6);
-  // board.add_set(s7);
-  // board.add_set(s8);
-  // board.add_set(s2);
-  // board.add_set(s5);
-  
+  Set s1(SetType::Group, { Tile(6, Color::Red),
+                           Tile(6, Color::Black), 
+                           Tile(6, Color::Blue), 
+                           Tile(6, Color::Orange)});
+
+  Set s2(SetType::Group, { Tile(7, Color::Red),
+                           Tile(7, Color::Blue), 
+                           Tile(7, Color::Orange)});
+
+  Set s3(SetType::Group, { Tile(8, Color::Red),
+                           Tile(8, Color::Blue), 
+                           Tile(8, Color::Black)});
+
+  Set s4(SetType::Group, { Tile(4, Color::Black),
+                           Tile(4, Color::Red), 
+                           Tile(4, Color::Blue)});
+
+  Set s5(SetType::Group, { Tile(2, Color::Orange),
+                           Tile(2, Color::Red), 
+                           Tile(2, Color::Blue)});
+
+  Set s6(SetType::Group, { Tile(13, Color::Orange),
+                           Tile(13, Color::Red), 
+                           Tile(13, Color::Black)});
+
+  Set s7(SetType::Group, { Tile(3, Color::Orange),
+                           Tile(3, Color::Blue), 
+                           Tile(3, Color::Black)});
+
+  Set s8(SetType::Group, { Tile(12, Color::Orange),
+                           Tile(12, Color::Blue), 
+                           Tile(12, Color::Red, true)});
+
+
+  Set s9(SetType::Run,   { Tile(7, Color::Black),
+                           Tile(8, Color::Black), 
+                           Tile(9, Color::Black), 
+                           Tile(10, Color::Black),
+                           Tile(11, Color::Black)});
+
+  Set s10(SetType::Run,   { Tile(9, Color::Red),
+                           Tile(10, Color::Red), 
+                           Tile(11, Color::Red)});
+
+  Set s11(SetType::Run,   { Tile(11, Color::Blue),
+                           Tile(12, Color::Blue), 
+                           Tile(13, Color::Blue)});
+
+  Set s12(SetType::Run,   { Tile(9, Color::Orange),
+                           Tile(10, Color::Orange), 
+                           Tile(11, Color::Orange), 
+                           Tile(12, Color::Orange)});
+
+  Set s13(SetType::Run,   { Tile(10, Color::Black),
+                           Tile(11, Color::Black), 
+                           Tile(12, Color::Black), 
+                           Tile(13, Color::Black)});
+
+  Set s14(SetType::Run,   { Tile(7, Color::Blue),
+                           Tile(8, Color::Blue), 
+                           Tile(9, Color::Blue)});
+
+  Set s15(SetType::Run,   {Tile(2, Color::Black),
+                           Tile(3, Color::Black), 
+                           Tile(4, Color::Black), 
+                           Tile(5, Color::Black)});
+
+  board.add_set(s1);
+  board.add_set(s2);
+  board.add_set(s3);
+  board.add_set(s4);
+  board.add_set(s5);
+  board.add_set(s6);
+  board.add_set(s7);
+  board.add_set(s8);
+  board.add_set(s9);
+  board.add_set(s10);
+  board.add_set(s11);
+  board.add_set(s12);
+  board.add_set(s13);
+  board.add_set(s14);
+  board.add_set(s15);
+
+  std::vector<Tile> testHand = {
+    Tile(6, Color::Black),
+    Tile(1, Color::Red),
+    Tile(1, Color::Orange),
+    Tile(4, Color::Red),
+    Tile(8, Color::Red),
+    Tile(9, Color::Red),
+    Tile(10, Color::Red),
+    Tile(6, Color::Blue),
+    Tile(2, Color::Orange),
+  };
+
   TilesBag bag;
+
+  AIPlayer ai("Davide");
+  ai.set_hand(testHand);
+
+  board.print();
+
+  ai.play_turn(board, bag);
+
+  exit(0);
 
   int nPlayers;
   std::cout << "How many players are playing?\n";
@@ -81,7 +137,7 @@ int main() {
     }
   }
 
-  // Ask user how long much time they are willing to wait for answer of AI
+  // Ask user how much time they are willing to wait for answer of AI
   std::cout << "Wie lang magsch warte? (in seconds): ";
   std::cin >> TIME_LIMIT;
 

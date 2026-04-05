@@ -84,6 +84,8 @@ class AIPlayer: public Player {
 
     void play_turn(Board& board, TilesBag& bag) override;
 
+    void set_hand(const std::vector<Tile>& v); // DEBUG
+
   private:
     bool draw_tile(TilesBag& bag) override;
 
