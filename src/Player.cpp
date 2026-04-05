@@ -411,13 +411,14 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   int nTilesOnBoardCount = 0;
   int currentBoardValSum = 0;
 
+  // Maps tile to a vector of indices i such that allTiles[i] contains that tile
   TileSetsMap setsContainingTileFast;
   for (int i = 0; i < allSets.size(); ++i) {
-      for (const Tile& t : allSets[i].tiles) {
-          if (std::find(setsContainingTileFast[t].begin(), setsContainingTileFast[t].end(), i) == setsContainingTileFast[t].end()) {
-              setsContainingTileFast[t].push_back(i);
-          }
+    for (const Tile& t : allSets[i].tiles) {
+      if (std::find(setsContainingTileFast[t].begin(), setsContainingTileFast[t].end(), i) == setsContainingTileFast[t].end()) {
+        setsContainingTileFast[t].push_back(i);
       }
+    }
   }
 
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
