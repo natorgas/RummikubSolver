@@ -407,8 +407,22 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
 
   auto startTime = std::chrono::high_resolution_clock::now();
 
+  int unplacedBoardTiles = initialBoardSize;
+  int nTilesOnBoardCount = 0;
+  int currentBoardValSum = 0;
+
+  TileSetsMap setsContainingTileFast;
+  for (int i = 0; i < allSets.size(); ++i) {
+      for (const Tile& t : allSets[i].tiles) {
+          if (std::find(setsContainingTileFast[t].begin(), setsContainingTileFast[t].end(), i) == setsContainingTileFast[t].end()) {
+              setsContainingTileFast[t].push_back(i);
+          }
+      }
+  }
+
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
-                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum);
+                 bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum,
+                 unplacedBoardTiles, nTilesOnBoardCount, currentBoardValSum, setsContainingTileFast);
 
   auto endTime = std::chrono::high_resolution_clock::now();
 
@@ -497,9 +511,12 @@ bool AIPlayer::find_best_move(
     int&                    maxHandTilesUsed,
     const int               allSetsIndex,
     const std::chrono::high_resolution_clock::time_point& startTime,
-    const int               initialBoardValSum) {
+    const int               initialBoardValSum,
+    int                     unplacedBoardTiles,
+    int                     nTilesOnBoardCount,
+    int                     currentBoardValSum,
+    const TileSetsMap&      setsContainingTileFast) {
 
-  // Check how long we have been looking for the best move
   if (++stepCounter % 1000 == 0) {
     auto now = std::chrono::high_resolution_clock::now();
     if (now - startTime > std::chrono::duration<double>(TIME_LIMIT)) {
@@ -508,46 +525,19 @@ bool AIPlayer::find_best_move(
     }
   }
 
-  if (allSetsIndex >= allSets.size()) {
-    return false;
-  }
-
-  // Check if we placed all necessary tiles
-  if (all_original_tiles_placed(boardTiles)) {
-    int tilesOnBoard = 0;
-    int currentBoardValSum = 0;
-
-    // Calculate number of tiles on board
-    for (int i = 0; i < setIndexToUseFreq.size(); i++) {
-      tilesOnBoard += allSets[i].size() * setIndexToUseFreq[i];
-    }
-
-    // If we have not made first move, additionally calculate the sum of values of all tiles
-    if (!made_first_move()) {
-      for (int i = 0; i < setIndexToUseFreq.size(); i++) {
-        for (const Tile& t : allSets[i].tiles) {
-          currentBoardValSum += t.value * setIndexToUseFreq[i];
-        }
-      }
-    }
-
-    const int nHandTilesUsed = tilesOnBoard - initialBoardSize;
+  if (unplacedBoardTiles == 0) {
+    const int nHandTilesUsed = nTilesOnBoardCount - initialBoardSize;
     assert(nHandTilesUsed >= 0);
 
     bool isValidMove = true;
-
-    // If we have not made first move and we dont meet the minimum sum requirement, mark this move as invalid
     if (!made_first_move() && (currentBoardValSum - initialBoardValSum < MIN_FIRST_MOVE_SUM)) {
       isValidMove = false;
     }
 
-    // Only consider a valid move that improves the number of tiles we place
     if (isValidMove && nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
       std::cout << "Can place " << maxHandTilesUsed << std::endl;
-
-      // If we used all tiles on hand, we won
       if (maxHandTilesUsed == n_owned_tiles()) {
         std::cout << get_name() << " won!\n";
         return true;
@@ -555,64 +545,135 @@ bool AIPlayer::find_best_move(
     }
   }
 
-  const Set& trialSet = allSets[allSetsIndex];
+  if (unplacedBoardTiles > 0) {
+    Tile firstUnplaced(0, Color::None);
+    int minSets = allSets.size();
 
-  // If set can be placed
-  if (set_can_be_placed(trialSet, availableTiles)) {
-
-    // Place it
-    setIndexToUseFreq[allSetsIndex]++;
-
-    std::vector<Tile> decrementedBoardTiles;
-    decrementedBoardTiles.reserve(trialSet.size());
-
-    // And decrement tiles correctly
-    for (const Tile& t : trialSet.tiles) {
-      if (t.isJoker) {
-        Tile joker(0, Color::None, true);
-        availableTiles[joker]--;
-        if (boardTiles[joker] > 0) {
-          boardTiles[joker]--;
-          decrementedBoardTiles.push_back(joker);
-        }
-      }
-      else {
-        availableTiles[t]--;
+    // Choose which tile we will try to place down next:
+    // For every tile on board check how many sets that we can build with the 
+    // remaining tiles contain that tile, choose tile with the least amount of options
+    for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
+      for (Color c : ALL_COLORS) {
+        Tile t(val, c);
         if (boardTiles[t] > 0) {
-          boardTiles[t]--;
-          decrementedBoardTiles.push_back(t);
+          int validSetsCount = 0;
+          for (int i : setsContainingTileFast[t]) {
+            if (set_can_be_placed(allSets[i], availableTiles)) {
+              validSetsCount++;
+            }
+          }
+          if (validSetsCount < minSets) {
+            minSets = validSetsCount;
+            firstUnplaced = t;
+          }
         }
       }
     }
-
-    // Try this set again
-    if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                       setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum)) {
-      return true;
-    }
-
-    // If we return from the upper function => placing this set did not work out, remove it
-    setIndexToUseFreq[allSetsIndex]--;
-    for (const Tile& t : trialSet.tiles) {
-      if (t.isJoker) {
-        availableTiles[Tile(0, Color::None, true)]++;
+    
+    Tile joker(0, Color::None, true);
+    if (boardTiles[joker] > 0) {
+      int validSetsCount = 0;
+      for (int i : setsContainingTileFast[joker]) {
+        if (set_can_be_placed(allSets[i], availableTiles)) {
+          validSetsCount++;
+        }
       }
-      else availableTiles[t]++;
-    }
-    for (const Tile& t : decrementedBoardTiles) {
-      if (t.isJoker) {
-        boardTiles[Tile(0, Color::None, true)]++;
+      if (validSetsCount < minSets) {
+        minSets = validSetsCount;
+        firstUnplaced = joker;
       }
-      else boardTiles[t]++;
     }
+
+    // If there is no set we can place which contains the tile which we must place, prune
+    if (minSets == 0) return false;
+
+    for (int i : setsContainingTileFast[firstUnplaced]) {
+      const Set& trialSet = allSets[i];
+
+      if (set_can_be_placed(trialSet, availableTiles)) {
+        setIndexToUseFreq[i]++;
+        std::vector<Tile> decrementedBoardTiles;
+        decrementedBoardTiles.reserve(trialSet.size());
+        
+        int boardTilesDecremented = 0;
+        int trialSetValSum = 0;
+
+        for (const Tile& t : trialSet.tiles) {
+          trialSetValSum += t.value;
+          if (t.isJoker) {
+            Tile jokerTile(0, Color::None, true);
+            availableTiles[jokerTile]--;
+            if (boardTiles[jokerTile] > 0) {
+              boardTiles[jokerTile]--;
+              decrementedBoardTiles.push_back(jokerTile);
+              boardTilesDecremented++;
+            }
+          }
+          else {
+            availableTiles[t]--;
+            if (boardTiles[t] > 0) {
+              boardTiles[t]--;
+              decrementedBoardTiles.push_back(t);
+              boardTilesDecremented++;
+            }
+          }
+        }
+
+        if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
+              setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum,
+              unplacedBoardTiles - boardTilesDecremented, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, 
+              setsContainingTileFast)) {
+          return true;
+        }
+
+        setIndexToUseFreq[i]--;
+        for (const Tile& t : trialSet.tiles) {
+          if (t.isJoker) {
+            availableTiles[Tile(0, Color::None, true)]++;
+          }
+          else availableTiles[t]++;
+        }
+        for (const Tile& t : decrementedBoardTiles) {
+          if (t.isJoker) {
+            boardTiles[Tile(0, Color::None, true)]++;
+          }
+          else boardTiles[t]++;
+        }
+      }
+    }
+    return false;
+  } 
+  else {
+    if (allSetsIndex >= allSets.size()) return false;
+
+    for (int i = allSetsIndex; i < allSets.size(); ++i) {
+      const Set& trialSet = allSets[i];
+
+      if (set_can_be_placed(trialSet, availableTiles)) {
+        setIndexToUseFreq[i]++;
+        
+        int trialSetValSum = 0;
+        for (const Tile& t : trialSet.tiles) {
+          trialSetValSum += t.value;
+          if (t.isJoker) availableTiles[Tile(0, Color::None, true)]--;
+          else availableTiles[t]--;
+        }
+
+        if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
+                           setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, i, startTime, initialBoardValSum,
+                           unplacedBoardTiles, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, setsContainingTileFast)) {
+          return true;
+        }
+
+        setIndexToUseFreq[i]--;
+        for (const Tile& t : trialSet.tiles) {
+          if (t.isJoker) availableTiles[Tile(0, Color::None, true)]++;
+          else availableTiles[t]++;
+        }
+      }
+    }
+    return false;
   }
-  
-  // We go to next set independently of whether or not we were able to place current set
-  if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
-                     setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex+1, startTime, initialBoardValSum)) {
-    return true;
-  }
-  return false;
 }
 
 void AIPlayer::set_hand(const std::vector<Tile>& v) { hand = v; increase_tiles(v.size()); make_first_move(); }

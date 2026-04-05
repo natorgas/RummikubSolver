@@ -1,0 +1,39 @@
+2
+AI
+Human
+60
+7 red
+8 red
+9 red
+1 red
+1 blue
+1 orange
+10 red
+11 red
+12 red
+13 red
+10 blue
+10 orange
+1 black
+2 black
+cg
+4
+3
+orange
+y
+d
+d
+d
+d
+d
+d
+d
+d
+d
+d
+d
+d
+d
+d
+y
+y

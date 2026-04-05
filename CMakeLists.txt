@@ -9,6 +9,5 @@ add_executable(main
   src/GameTypes.cpp
   src/Player.cpp
   src/TilesBag.cpp
-  src/TileMap.cpp
 )
 

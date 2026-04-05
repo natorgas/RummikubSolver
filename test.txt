@@ -1,0 +1,17 @@
+1
+AI
+60
+1 black
+2 black
+3 black
+4 black
+5 black
+1 red
+1 blue
+1 orange
+10 red
+11 red
+12 red
+13 red
+10 blue
+10 orange

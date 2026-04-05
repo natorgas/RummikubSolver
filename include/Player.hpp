@@ -99,7 +99,11 @@ class AIPlayer: public Player {
         int&                    maxHandTilesUsed,
         const int               allSetsIndex,
         const std::chrono::high_resolution_clock::time_point& startTime,
-        const int               initialBoardValSum
+        const int               initialBoardValSum,
+        int                     unplacedBoardTiles,
+        int                     nTilesOnBoardCount,
+        int                     currentBoardValSum,
+        const TileSetsMap&      setsContainingTileFast
     );
 
     std::vector<Tile> hand;
