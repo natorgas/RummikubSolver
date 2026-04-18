@@ -493,7 +493,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
       hand.erase(it);
     } 
     
-    if (progressCallback) progressCallback("Turn done.\n" + placedStr);
+    if (progressCallback) progressCallback("Turn done.\nTook " + std::to_string(duration.count()).substr(0,4) + "s.\n" + placedStr);
 
     std::cout << std::endl;
   }

@@ -214,7 +214,7 @@ void MainWindow::onResetClicked() {
 
 void MainWindow::onDoneClicked() {
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-      QMessageBox::information(this, "AI Turn", "AI manages its own turns.");
+      startNextTurn();
       return;
   }
 
@@ -470,11 +470,9 @@ void MainWindow::processAITurn() {
   
   ai->play_turn(board, bag);
   
-  if (aiStatusText->toPlainText().contains("AI could not move.")) {
-      // Just leave the text there for the user to press 'Draw Tile'
-  } else {
-      startNextTurn();
-  }
+  // AI finished its thought process. 
+  // We leave it as AI turn so user can see the board and the status message.
+  // The user will decide when to click 'Done' or 'Draw Tile'.
   
   drawBoard();
   
