@@ -516,7 +516,7 @@ bool AIPlayer::find_best_move(
     int                     unplacedBoardTiles,
     int                     nTilesOnBoardCount,
     int                     currentBoardValSum,
-    const TileSetsMap&      setsContainingTileFast) {
+    const TileSetsMap&      setsContainingTile) {
 
   if (++stepCounter % 1000 == 0) {
     auto now = std::chrono::high_resolution_clock::now();
@@ -558,7 +558,7 @@ bool AIPlayer::find_best_move(
         Tile t(val, c);
         if (boardTiles[t] > 0) {
           int validSetsCount = 0;
-          for (int i : setsContainingTileFast[t]) {
+          for (int i : setsContainingTile[t]) {
             if (set_can_be_placed(allSets[i], availableTiles)) {
               validSetsCount++;
             }
@@ -574,7 +574,7 @@ bool AIPlayer::find_best_move(
     Tile joker(0, Color::None, true);
     if (boardTiles[joker] > 0) {
       int validSetsCount = 0;
-      for (int i : setsContainingTileFast[joker]) {
+      for (int i : setsContainingTile[joker]) {
         if (set_can_be_placed(allSets[i], availableTiles)) {
           validSetsCount++;
         }
@@ -588,7 +588,7 @@ bool AIPlayer::find_best_move(
     // If there is no set we can place which contains the tile which we must place, prune
     if (minSets == 0) return false;
 
-    for (int i : setsContainingTileFast[firstUnplaced]) {
+    for (int i : setsContainingTile[firstUnplaced]) {
       const Set& trialSet = allSets[i];
 
       if (set_can_be_placed(trialSet, availableTiles)) {
@@ -623,7 +623,7 @@ bool AIPlayer::find_best_move(
         if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
               setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum,
               unplacedBoardTiles - boardTilesDecremented, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, 
-              setsContainingTileFast)) {
+              setsContainingTile)) {
           return true;
         }
 
@@ -644,6 +644,8 @@ bool AIPlayer::find_best_move(
     }
     return false;
   } 
+
+  // At this point all original tiles have been placed and we check if we can further increase our score
   else {
     if (allSetsIndex >= allSets.size()) return false;
 
@@ -662,7 +664,8 @@ bool AIPlayer::find_best_move(
 
         if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                            setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, i, startTime, initialBoardValSum,
-                           unplacedBoardTiles, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, setsContainingTileFast)) {
+                           unplacedBoardTiles, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, 
+                           setsContainingTile)) {
           return true;
         }
 

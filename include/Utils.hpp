@@ -238,8 +238,6 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
     allSets.insert(allSets.end(), allRuns.begin(), allRuns.end());
   }
 
-  std::cout << "Found " << allSets.size() << " sets.\n";
-
   return allSets;
 }
 

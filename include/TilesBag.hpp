@@ -1,10 +1,6 @@
 #ifndef TILES_BAG_HPP
 #define TILES_BAG_HPP
 
-#include <array>
-#include "Constants.hpp"
-#include "GameTypes.hpp"
-
 class TilesBag {
   public:
     TilesBag();
