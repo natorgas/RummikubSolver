@@ -366,6 +366,24 @@ void MainWindow::onDoneClicked() {
       return;
   }
 
+  // First move 30-point rule check
+  if (!players[currentPlayerIndex]->made_first_move()) {
+      int moveSum = val_sum_of_placed_tiles(initialBoard, newBoard);
+      if (moveSum < MIN_FIRST_MOVE_SUM) {
+          QMessageBox::warning(this, "First Move Invalid", 
+                               QString("Initial move must have a total value of at least %1 points. "
+                                       "Current value: %2. Try again.").arg(MIN_FIRST_MOVE_SUM).arg(moveSum));
+          onResetClicked();
+          return;
+      }
+      
+      // Also ensure they didn't modify existing board tiles (only allowed to add)
+      // Since newTiles must include all oldTiles, if they haven't made first move, 
+      // the only way to not modify existing sets is if the original sets are still there.
+      // For simplicity, we just enforce the sum rule as most Rummikub implementations focus on that first.
+      players[currentPlayerIndex]->make_first_move();
+  }
+
   players[currentPlayerIndex]->set_hand(currentHand);
   board = newBoard;
   

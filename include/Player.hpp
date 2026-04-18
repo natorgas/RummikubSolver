@@ -29,6 +29,8 @@ class Player {
     void inital_draw(TilesBag& bag);
 
     bool placed_all_tiles() const;
+    bool made_first_move() const;
+    void make_first_move();
 
   protected:
     std::vector<Tile> hand;
@@ -37,9 +39,7 @@ class Player {
 
     void decrease_tiles(int n);
 
-    bool made_first_move() const;
 
-    void make_first_move();
 
     int n_owned_tiles() const;
 
