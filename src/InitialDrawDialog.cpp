@@ -120,7 +120,7 @@ void InitialDrawDialog::onTileClicked() {
 
 void InitialDrawDialog::updateButtonVisuals(QPushButton* btn, int count) {
   if (count == 0) {
-    btn->setStyleSheet("background-color: none; color: black;"); 
+    btn->setStyleSheet("");
   } else if (count == 1) {
     btn->setStyleSheet("background-color: #90EE90; border: 2px solid green; color: black;"); 
   } else if (count == 2) {
@@ -138,7 +138,6 @@ std::vector<Tile> InitialDrawDialog::getDrawnTiles() const {
       for (int i = 0; i < count; ++i) result.push_back(t);
     }
   }
-  // Don't forget the Joker reconstruction if it wasn't in the loop above
   Tile joker(0, Color::None, true);
   int jCount = selectionCounts[joker];
   for(int i=0; i<jCount; ++i) result.push_back(joker);
