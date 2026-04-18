@@ -443,11 +443,11 @@ void MainWindow::startNextTurn() {
   drawBoard();
 
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-    QMessageBox::information(this, "Turn", "AI's turn. Processing...");
+    
     processAITurn();
   } 
   else {
-    QMessageBox::information(this, "Turn", QString("%1's turn!").arg(QString::fromStdString(players[currentPlayerIndex]->get_name())));
+    
   }
 }
 
