@@ -404,24 +404,40 @@ void MainWindow::onDrawTileClicked() {
     QString tileStr = QInputDialog::getText(this, "AI Draw", "Enter drawn tile (e.g. '13 Red' or 'Joker'):", QLineEdit::Normal, "", &ok);
     if (ok && !tileStr.trimmed().isEmpty()) {
       std::string s = tileStr.trimmed().toStdString();
-      Tile t(0, Color::None);
+      Tile t(0, Color::None, true); // Default to a safe Joker state
+      bool validParse = false;
       if (s == "Joker" || s == "joker" || s == "JOKER") {
-        t.isJoker = true;
+          t = Tile(0, Color::None, true);
+          validParse = true;
       } else {
-        std::stringstream ss(s);
-        int val;
-        std::string c;
-        ss >> val >> c;
-        Color col = str_to_color(c);
-        t = Tile(val, col);
+          std::stringstream ss(s);
+          int val;
+          std::string c;
+          if (ss >> val >> c) {
+              std::string lower_c = c;
+              for (auto& ch : lower_c) ch = std::tolower(ch);
+              Color col = Color::None;
+              if (lower_c == "black") col = Color::Black;
+              else if (lower_c == "blue") col = Color::Blue;
+              else if (lower_c == "red") col = Color::Red;
+              else if (lower_c == "orange") col = Color::Orange;
+              
+              if (col != Color::None && val >= 1 && val <= 13) {
+                  t = Tile(val, col, false);
+                  validParse = true;
+              }
+          }
       }
-      static_cast<AIPlayer*>(players[currentPlayerIndex].get())->add_to_hand(t);
-      QMessageBox::information(this, "AI Drew", "AI registered drawing!");
-      startNextTurn();
+      
+      if (validParse) {
+          static_cast<AIPlayer*>(players[currentPlayerIndex].get())->add_to_hand(t);
+          startNextTurn();
+      } else {
+          QMessageBox::warning(this, "Invalid", "Invalid tile format. Please use '13 Red' or 'Joker'.");
+      }
     }
-  } else {
-    if (!bag.is_empty()) {
-      bag.draw();
+    } else {
+    if (players[currentPlayerIndex]->add_random_tile(bag)) {
       QMessageBox::information(this, "Draw", "Human drew a tile.");
       startNextTurn();
     }
@@ -439,6 +455,12 @@ void MainWindow::startNextTurn() {
   if (aiStatusText) {
       aiStatusText->setPlainText("");
   }
+
+  // Re-enable all buttons at turn start
+  resetBtn->setEnabled(true);
+  doneBtn->setEnabled(true);
+  drawTileBtn->setEnabled(true);
+  spawnTileBtn->setEnabled(true);
   
   drawBoard();
 
@@ -453,6 +475,12 @@ void MainWindow::startNextTurn() {
 
 void MainWindow::processAITurn() {
   AIPlayer* ai = static_cast<AIPlayer*>(players[currentPlayerIndex].get());
+
+  // Disable all buttons during AI thought
+  resetBtn->setEnabled(false);
+  doneBtn->setEnabled(false);
+  drawTileBtn->setEnabled(false);
+  spawnTileBtn->setEnabled(false);
 
   // Position the text item on the right side
   aiStatusText->setPos(800, 50); 
@@ -470,9 +498,16 @@ void MainWindow::processAITurn() {
   
   ai->play_turn(board, bag);
   
-  // AI finished its thought process. 
-  // We leave it as AI turn so user can see the board and the status message.
-  // The user will decide when to click 'Done' or 'Draw Tile'.
+  // Determine if AI was able to place any tiles
+  std::vector<Tile> newlyPlaced = get_newly_placed_tiles(initialBoard, board);
+  
+  if (!newlyPlaced.empty()) {
+      // AI placed tiles: only Done is allowed
+      doneBtn->setEnabled(true);
+  } else {
+      // AI could not move: only Draw Tile is allowed
+      drawTileBtn->setEnabled(true);
+  }
   
   drawBoard();
   
@@ -495,34 +530,34 @@ void MainWindow::onSpawnTileClicked() {
             std::string s = tsRaw.trimmed().toStdString();
             if (s.empty()) continue;
             
-            Tile t(0, Color::None);
+            Tile t(0, Color::None, true);
+            bool validParse = false;
             if (s == "Joker" || s == "joker" || s == "JOKER") {
-                t.isJoker = true;
+                t = Tile(0, Color::None, true);
+                validParse = true;
             } else {
                 std::stringstream ss(s);
                 int val;
                 std::string c;
-                if (!(ss >> val >> c)) {
-                    QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
-                    break;
+                if (ss >> val >> c) {
+                    std::string lower_c = c;
+                    for (auto& ch : lower_c) ch = std::tolower(ch);
+                    Color col = Color::None;
+                    if (lower_c == "black") col = Color::Black;
+                    else if (lower_c == "blue") col = Color::Blue;
+                    else if (lower_c == "red") col = Color::Red;
+                    else if (lower_c == "orange") col = Color::Orange;
+                    
+                    if (col != Color::None && val >= 1 && val <= 13) {
+                        t = Tile(val, col, false);
+                        validParse = true;
+                    }
                 }
-                std::string lower_c = c;
-                for (auto& ch : lower_c) ch = std::tolower(ch);
-                
-                Color col;
-                if (lower_c == "black") col = Color::Black;
-                else if (lower_c == "blue") col = Color::Blue;
-                else if (lower_c == "red") col = Color::Red;
-                else if (lower_c == "orange") col = Color::Orange;
-                else {
-                    QMessageBox::warning(this, "Invalid", QString("Invalid color in tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
-                    break;
-                }
-                if (val < 1 || val > 13) {
-                    QMessageBox::warning(this, "Invalid", QString("Invalid value in tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
-                    break;
-                }
-                t = Tile(val, col);
+            }
+            
+            if (!validParse) {
+                QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Skipping this one.").arg(QString::fromStdString(s)));
+                continue;
             }
             
             if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {

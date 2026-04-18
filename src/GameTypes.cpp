@@ -21,6 +21,9 @@ void Tile::print() const {
 }
 
 bool Tile::operator<(const Tile& other) const {
+  if (isJoker != other.isJoker) {
+    return isJoker < other.isJoker;
+  }
   if (color != other.color) {
     return color < other.color;
   }
@@ -28,7 +31,7 @@ bool Tile::operator<(const Tile& other) const {
 }
 
 bool Tile::operator==(const Tile& other) const {
-  return (value == other.value) && (color == other.color);
+  return (value == other.value) && (color == other.color) && (isJoker == other.isJoker);
 }
 
 /****************************************************************************/

@@ -105,12 +105,24 @@ void InitialDrawDialog::onTileClicked() {
   int idx = btn->property("tileIndex").toInt();
   int& count = *(selectionCounts.begin() + idx);
 
-  if (count < 2 && totalSelected < 14) {
-    count++;
-    totalSelected++;
+  if (count == 0) {
+      if (totalSelected < 14) {
+          count = 1;
+          totalSelected++;
+      }
+  } else if (count == 1) {
+      if (totalSelected < 14) {
+          count = 2;
+          totalSelected++;
+      } else {
+          // Can't add more, so deselect
+          totalSelected -= 1;
+          count = 0;
+      }
   } else {
-    totalSelected -= count;
-    count = 0;
+      // count == 2
+      totalSelected -= 2;
+      count = 0;
   }
 
   updateButtonVisuals(btn, count);

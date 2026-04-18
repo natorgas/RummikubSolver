@@ -27,6 +27,7 @@ class Player {
     virtual void play_turn(Board& board, TilesBag& bag) = 0;
 
     void inital_draw(TilesBag& bag);
+    bool add_random_tile(TilesBag& bag);
 
     bool placed_all_tiles() const;
     bool made_first_move() const;

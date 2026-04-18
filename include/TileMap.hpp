@@ -15,7 +15,7 @@ class GenericTileMap {
     int index(const Tile& t) const {
       if (t.isJoker) return N_DIFF_TILES-1;
 
-      assert(t.color != Color::None && "Non-Joker tile can't have Color == None");
+      if (t.color == Color::None) return N_DIFF_TILES-1;
 
       return (t.value - 1) * NUM_COLORS + static_cast<int>(t.color);
     }

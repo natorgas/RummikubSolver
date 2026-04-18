@@ -696,3 +696,7 @@ void Player::set_hand(const std::vector<Tile>& h) {
 void Player::set_progress_callback(std::function<void(std::string)> cb) {
   progressCallback = cb;
 }
+
+bool Player::add_random_tile(TilesBag& bag) {
+  return draw_tile(bag);
+}
