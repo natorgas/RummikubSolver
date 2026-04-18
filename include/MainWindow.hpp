@@ -4,6 +4,11 @@
 #include <QMainWindow>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QPushButton>
+#include <QGraphicsRectItem>
+#include <QGraphicsTextItem>
+#include <QInputDialog>
+#include <QMessageBox>
 #include <qwidget.h>
 #include <vector>
 #include <memory>
@@ -19,12 +24,31 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow() = default;
 
+private slots:
+    void onResetClicked();
+    void onDoneClicked();
+    void onDrawTileClicked();
+    void onSpawnTileClicked();
+
 private:
+    void drawBoard();
+    void startNextTurn();
+    void processAITurn();
+
     void setupGame(); // Replaces the setup part of your old main()
 
     // --- GUI Components ---
     QGraphicsView* view;
     QGraphicsScene* scene;
+    QGraphicsTextItem* aiStatusText;
+    QPushButton* resetBtn;
+    QPushButton* doneBtn;
+    QPushButton* drawTileBtn;
+    QPushButton* spawnTileBtn;
+    
+    Board initialBoard;
+    std::vector<Tile> initialHand;
+    int currentPlayerIndex;
 
     // --- Game State ---
     Board board;

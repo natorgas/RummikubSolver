@@ -38,10 +38,10 @@ inline std::string color_to_str(Color col) {
     case Color::Black:   return "Black"; 
     case Color::Red:     return "Red";    
     case Color::Orange:  return "Orange";
-    case Color::Blue:    return "Blue";   
+    case Color::Blue:    return "Blue";
+    case Color::None:    return "None";
     default: 
-                         std::cout << "There was a color->str conversion error!\n";
-                         return "ConversionError";
+                         return "Unknown";
   }
 }
 

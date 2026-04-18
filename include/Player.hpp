@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <functional>
 #include "TileMap.hpp"
 #include "GameTypes.hpp"
 #include "TilesBag.hpp"
@@ -12,6 +13,10 @@
 class Player {
   public:
     Player() = delete;
+    void add_to_hand(const Tile& t);
+    const std::vector<Tile>& get_hand() const;
+    void set_hand(const std::vector<Tile>& h);
+    void set_progress_callback(std::function<void(std::string)> cb);
 
     Player(std::string nme);
 
@@ -26,6 +31,8 @@ class Player {
     bool placed_all_tiles() const;
 
   protected:
+    std::vector<Tile> hand;
+    std::function<void(std::string)> progressCallback = nullptr;
     void increase_tiles(int n);
 
     void decrease_tiles(int n);
@@ -84,7 +91,8 @@ class AIPlayer: public Player {
 
     void play_turn(Board& board, TilesBag& bag) override;
 
-    void set_hand(const std::vector<Tile>& v); // DEBUG
+    
+    
 
   private:
     bool draw_tile(TilesBag& bag) override;
@@ -105,8 +113,6 @@ class AIPlayer: public Player {
         int                     currentBoardValSum,
         const TileSetsMap&      setsContainingTileFast
     );
-
-    std::vector<Tile> hand;
 
     // Used for controlling time used by find_best_move
     // unsigned for defined overflow

@@ -20,6 +20,16 @@ Player::Player(std::string nme) : name(nme),
 
 std::string Player::get_name() const { return name; }
 
+void Player::add_to_hand(const Tile& t) {
+  hand.push_back(t);
+  increase_tiles(1);
+}
+
+const std::vector<Tile>& Player::get_hand() const {
+  return hand;
+}
+
+
 void Player::inital_draw(TilesBag& bag) {
   std::cout << get_name() << ", draw your initial tiles.\n";
   for (int i = 0; i < INITIAL_N_OWNED_TILES; ++i) {
@@ -28,21 +38,18 @@ void Player::inital_draw(TilesBag& bag) {
 }
 
 void Player::increase_tiles(int n) {
-  assert(n >= 0);
-  nOwnedTiles += n;
+  // nOwnedTiles is redundant now that hand is in base class
 }
 
 void Player::decrease_tiles(int n) {
-  assert(n >= 0);
-  nOwnedTiles -= n;
-  assert(nOwnedTiles >= 0 && "Can't have negative amount of tiles");
+  // nOwnedTiles is redundant now that hand is in base class
 }
 
 void Player::make_first_move() { hasMadeFirstMove = true; }
 
 bool Player::made_first_move() const { return hasMadeFirstMove; }
 
-int Player::n_owned_tiles() const { return nOwnedTiles; }
+int Player::n_owned_tiles() const { return hand.size(); }
 
 bool Player::placed_all_tiles() const { return n_owned_tiles() == 0; }
 
@@ -186,8 +193,16 @@ bool HumanPlayer::make_move(Board& boardCopy, TilesBag& bag) {
 
 bool HumanPlayer::draw_tile(TilesBag& bag) {
   if (!bag.is_empty()){
-    bag.draw();
-    increase_tiles(1);
+    bag.draw(); // Consume a tile from the bag
+    
+    int val = rand() % 13 + 1;
+    Color col = static_cast<Color>(rand() % 4);
+    Tile t(val, col);
+    if (rand() % 106 < 2) {
+        t = Tile(0, Color::None, true);
+    }
+    
+    add_to_hand(t);
     return true;
   }
   else {
@@ -326,34 +341,11 @@ bool HumanPlayer::remove_run(Board& boardCopy) {
 
 /********************* Player -> AI *******************/
 
-AIPlayer::AIPlayer(std::string nme) : hand({}), stepCounter(0), Player(nme) {}
+AIPlayer::AIPlayer(std::string nme) : stepCounter(0), Player(nme) {}
 
 bool AIPlayer::draw_tile(TilesBag& bag) {
-  std::cout << "Enter the tile (either 'Joker' or 'value color'):\n";
-
-  std::string input;
-  std::cin >> input;
-
-  if (input == "Joker" || input == "joker") {
-    Tile jokerTile(0, Color::None, true);
-    hand.push_back(jokerTile);
-  }
-
-  else {
-    int val = std::stoi(input);
-
-    std::string c;
-    std::cin >> c;
-
-    Color col = str_to_color(c);
-
-    Tile drawnTile(val, col);
-    hand.push_back(drawnTile);
-  }
-
-  bag.draw();
-  increase_tiles(1);
-
+  std::cout << "MUST_DRAW_TILE" << std::endl;
+  if (progressCallback) progressCallback("MUST_DRAW_TILE");
   return true;
 }
 
@@ -486,20 +478,29 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
     }
 
     std::cout << "Placed tiles:\n";
+    std::string placedStr = "Placed:\n";
 
     // Remove used tiles from our hand
     for (const Tile& toErase : newlyPlacedTiles) {
       toErase.print();
+      if (toErase.isJoker) {
+        placedStr += "Joker\n";
+      } else {
+        placedStr += std::to_string(toErase.value) + " " + color_to_str(toErase.color) + "\n";
+      }
       auto it = std::find(hand.begin(), hand.end(), toErase);
       assert(it != hand.end());
       hand.erase(it);
     } 
+    
+    if (progressCallback) progressCallback("Turn done.\n" + placedStr);
 
     std::cout << std::endl;
   }
   
   std::cout << "Current Board: " << std::endl;
-  board.print();
+  // board.print(); // Removed as requested
+
 }
 
 bool AIPlayer::find_best_move(
@@ -539,6 +540,7 @@ bool AIPlayer::find_best_move(
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
       std::cout << "Can place " << maxHandTilesUsed << std::endl;
+      if (progressCallback) progressCallback("Can place " + std::to_string(maxHandTilesUsed) + " tiles.");
       if (maxHandTilesUsed == n_owned_tiles()) {
         std::cout << get_name() << " won!\n";
         return true;
@@ -680,8 +682,17 @@ bool AIPlayer::find_best_move(
   }
 }
 
-void AIPlayer::set_hand(const std::vector<Tile>& v) { hand = v; increase_tiles(v.size()); make_first_move(); }
 
 /******************************************************/
 
 
+
+
+
+void Player::set_hand(const std::vector<Tile>& h) {
+  hand = h;
+}
+
+void Player::set_progress_callback(std::function<void(std::string)> cb) {
+  progressCallback = cb;
+}
