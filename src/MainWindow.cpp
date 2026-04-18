@@ -24,6 +24,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), currentPlayerInde
   f.setPointSize(16);
   aiStatusText->setFont(f);
   scene->addItem(aiStatusText);
+
+  turnStatusText = new QGraphicsTextItem();
+  turnStatusText->setDefaultTextColor(Qt::white);
+  QFont turnFont = turnStatusText->font();
+  turnFont.setPointSize(20);
+  turnFont.setBold(true);
+  turnStatusText->setFont(turnFont);
+  scene->addItem(turnStatusText);
   view = new QGraphicsView(scene, this);
   mainLayout->addWidget(view);
 
@@ -157,14 +165,20 @@ class TileItem : public QGraphicsRectItem {
 };
 
 void MainWindow::drawBoard() {
-  if (aiStatusText && aiStatusText->scene() == scene) {
-      scene->removeItem(aiStatusText);
-  }
+  if (aiStatusText && aiStatusText->scene() == scene) scene->removeItem(aiStatusText);
+  if (turnStatusText && turnStatusText->scene() == scene) scene->removeItem(turnStatusText);
+  
   scene->clear();
+  
   if (aiStatusText) {
       scene->addItem(aiStatusText);
       aiStatusText->setPos(800, 50);
       aiStatusText->setZValue(100);
+  }
+  if (turnStatusText) {
+      scene->addItem(turnStatusText);
+      turnStatusText->setPos(400, 10);
+      turnStatusText->setZValue(100);
   }
   int yOffset = 20;
 
@@ -400,6 +414,14 @@ void MainWindow::startNextTurn() {
   currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
   initialBoard = board;
   initialHand = players[currentPlayerIndex]->get_hand();
+  
+  if (turnStatusText) {
+      turnStatusText->setPlainText(QString::fromStdString(players[currentPlayerIndex]->get_name()) + "'s Turn");
+  }
+  if (aiStatusText) {
+      aiStatusText->setPlainText("");
+  }
+  
   drawBoard();
 
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {

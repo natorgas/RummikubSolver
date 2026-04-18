@@ -41,6 +41,7 @@ private:
     QGraphicsView* view;
     QGraphicsScene* scene;
     QGraphicsTextItem* aiStatusText;
+    QGraphicsTextItem* turnStatusText;
     QPushButton* resetBtn;
     QPushButton* doneBtn;
     QPushButton* drawTileBtn;
