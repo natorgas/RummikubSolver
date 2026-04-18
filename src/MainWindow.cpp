@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), currentPlayerInde
 
   scene = new QGraphicsScene(this);
   aiStatusText = new QGraphicsTextItem();
-  aiStatusText->setDefaultTextColor(Qt::black);
+  aiStatusText->setDefaultTextColor(Qt::white);
   QFont f = aiStatusText->font();
   f.setPointSize(16);
   aiStatusText->setFont(f);
@@ -157,7 +157,15 @@ class TileItem : public QGraphicsRectItem {
 };
 
 void MainWindow::drawBoard() {
+  if (aiStatusText && aiStatusText->scene() == scene) {
+      scene->removeItem(aiStatusText);
+  }
   scene->clear();
+  if (aiStatusText) {
+      scene->addItem(aiStatusText);
+      aiStatusText->setPos(800, 50);
+      aiStatusText->setZValue(100);
+  }
   int yOffset = 20;
 
   auto drawSets = [&](const std::vector<Set>& sets, const QString& title) {
@@ -298,6 +306,9 @@ void MainWindow::onDoneClicked() {
   }
   addSet();
 
+  for (Set& s : newBoard.runs) if (!s.valid()) valid = false;
+  for (Set& s : newBoard.groups) if (!s.valid()) valid = false;
+
   std::vector<Tile> oldTiles = initialBoard.tiles_on_board();
   std::vector<Tile> newTiles = newBoard.tiles_on_board();
   normalize_jokers(oldTiles);
@@ -403,22 +414,32 @@ void MainWindow::startNextTurn() {
 void MainWindow::processAITurn() {
   AIPlayer* ai = static_cast<AIPlayer*>(players[currentPlayerIndex].get());
 
-  std::stringstream buffer;
-  std::streambuf* oldCout = std::cout.rdbuf(buffer.rdbuf());
-
+  // Position the text item on the right side
+  aiStatusText->setPos(800, 50); 
+  aiStatusText->setPlainText("AI is thinking...");
+  if (!aiStatusText->scene()) scene->addItem(aiStatusText);
+  
+  ai->set_progress_callback([this](std::string msg) {
+      if (msg == "MUST_DRAW_TILE") {
+          aiStatusText->setPlainText("AI could not move.\nPlease press 'Draw Tile' for AI.");
+      } else {
+          aiStatusText->setPlainText(QString::fromStdString(msg));
+      }
+      QApplication::processEvents();
+  });
+  
   ai->play_turn(board, bag);
-
-  std::cout.rdbuf(oldCout);
-
-  QString output = QString::fromStdString(buffer.str());
-  if (output.contains("MUST_DRAW_TILE")) {
-    QMessageBox::information(this, "AI Turn", "AI could not move. Please press 'Draw Tile' for AI.");
+  
+  if (aiStatusText->toPlainText().contains("AI could not move.")) {
+      // Just leave the text there for the user to press 'Draw Tile'
   } else {
-    QMessageBox::information(this, "AI Played", "AI placed tiles:\n" + output);
-    startNextTurn();
+      startNextTurn();
   }
-
+  
   drawBoard();
+  
+  if (!aiStatusText->scene()) scene->addItem(aiStatusText);
+  aiStatusText->setZValue(100);
 }
 
 void MainWindow::onSpawnTileClicked() {
@@ -427,47 +448,53 @@ void MainWindow::onSpawnTileClicked() {
         return;
     }
     bool ok;
-    QString tileStr = QInputDialog::getText(this, "Spawn Tile", "Enter tile to spawn (e.g. '13 Red' or 'Joker'):", QLineEdit::Normal, "", &ok);
+    QString tileStr = QInputDialog::getText(this, "Spawn Tile", "Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):", QLineEdit::Normal, "", &ok);
     if (ok && !tileStr.trimmed().isEmpty()) {
-        std::string s = tileStr.trimmed().toStdString();
-        Tile t(0, Color::None);
-        if (s == "Joker" || s == "joker" || s == "JOKER") {
-            t.isJoker = true;
-        } else {
-            std::stringstream ss(s);
-            int val;
-            std::string c;
-            if (!(ss >> val >> c)) {
-                QMessageBox::warning(this, "Invalid", "Could not parse tile. Use format '13 Red'.");
-                return;
-            }
-            std::string lower_c = c;
-            for (auto& ch : lower_c) ch = std::tolower(ch);
-            
-            Color col;
-            if (lower_c == "black") col = Color::Black;
-            else if (lower_c == "blue") col = Color::Blue;
-            else if (lower_c == "red") col = Color::Red;
-            else if (lower_c == "orange") col = Color::Orange;
-            else {
-                QMessageBox::warning(this, "Invalid", "Invalid color. Use Black, Blue, Red, or Orange.");
-                return;
-            }
-            if (val < 1 || val > 13) {
-                QMessageBox::warning(this, "Invalid", "Invalid value. Use 1-13.");
-                return;
-            }
-            t = Tile(val, col);
-        }
+        QStringList tileStrings = tileStr.split(",");
+        int spawnX = 50;
         
-        // Let's add it to the hand internally if it's a human player, just in case
-        if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-            players[currentPlayerIndex]->add_to_hand(t);
-        }
+        for (const QString& tsRaw : tileStrings) {
+            std::string s = tsRaw.trimmed().toStdString();
+            if (s.empty()) continue;
+            
+            Tile t(0, Color::None);
+            if (s == "Joker" || s == "joker" || s == "JOKER") {
+                t.isJoker = true;
+            } else {
+                std::stringstream ss(s);
+                int val;
+                std::string c;
+                if (!(ss >> val >> c)) {
+                    QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
+                    break;
+                }
+                std::string lower_c = c;
+                for (auto& ch : lower_c) ch = std::tolower(ch);
+                
+                Color col;
+                if (lower_c == "black") col = Color::Black;
+                else if (lower_c == "blue") col = Color::Blue;
+                else if (lower_c == "red") col = Color::Red;
+                else if (lower_c == "orange") col = Color::Orange;
+                else {
+                    QMessageBox::warning(this, "Invalid", QString("Invalid color in tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
+                    break;
+                }
+                if (val < 1 || val > 13) {
+                    QMessageBox::warning(this, "Invalid", QString("Invalid value in tile: '%1'. Ignoring remaining.").arg(QString::fromStdString(s)));
+                    break;
+                }
+                t = Tile(val, col);
+            }
+            
+            if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
+                players[currentPlayerIndex]->add_to_hand(t);
+            }
 
-        // Spawn the visual item at the top of the scene
-        TileItem* visualItem = new TileItem(t);
-        visualItem->setPos(50, 50); // Give it some padding
-        scene->addItem(visualItem);
+            TileItem* visualItem = new TileItem(t);
+            visualItem->setPos(spawnX, 700); 
+            scene->addItem(visualItem);
+            spawnX += 50; // offset each spawned tile so they don't overlap perfectly
+        }
     }
 }

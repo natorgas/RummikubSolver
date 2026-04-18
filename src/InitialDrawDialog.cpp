@@ -37,7 +37,7 @@ void InitialDrawDialog::setupUi() {
     if (col == Color::None) continue; 
 
     QLabel* colorLabel = new QLabel(QString::fromStdString(color_to_str(col)));
-    colorLabel->setStyleSheet("font-size: 16px; color: ;#b7b7b7");
+    colorLabel->setStyleSheet("font-size: 16px; color: #b7b7b7;");
     gridLayout->addWidget(colorLabel, row, 0);
 
     for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
