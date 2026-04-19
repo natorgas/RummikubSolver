@@ -490,7 +490,8 @@ void MainWindow::processAITurn() {
   ai->set_progress_callback([this](std::string msg) {
       if (msg == "MUST_DRAW_TILE") {
           aiStatusText->setPlainText("AI could not move.\nPlease press 'Draw Tile' for AI.");
-      } else {
+      } 
+      else {
           aiStatusText->setPlainText(QString::fromStdString(msg));
       }
       QApplication::processEvents();
@@ -504,7 +505,8 @@ void MainWindow::processAITurn() {
   if (!newlyPlaced.empty()) {
       // AI placed tiles: only Done is allowed
       doneBtn->setEnabled(true);
-  } else {
+  } 
+  else {
       // AI could not move: only Draw Tile is allowed
       drawTileBtn->setEnabled(true);
   }
@@ -535,7 +537,8 @@ void MainWindow::onSpawnTileClicked() {
             if (s == "Joker" || s == "joker" || s == "JOKER") {
                 t = Tile(0, Color::None, true);
                 validParse = true;
-            } else {
+            } 
+            else {
                 std::stringstream ss(s);
                 int val;
                 std::string c;
