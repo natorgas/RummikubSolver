@@ -24,10 +24,8 @@ private slots:
 private:
     void setupUi();
     void updateButtonVisuals(QPushButton* btn, int count);
-
     // Uses your GenericTileMap to store how many of each tile are selected (0, 1, or 2)
     TileMap selectionCounts; 
-
     // An array to store pointers to the buttons, indexed the same way as the TileMap
     std::array<QPushButton*, N_DIFF_TILES> tileButtons;
 

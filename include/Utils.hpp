@@ -7,7 +7,6 @@
 #include <array>
 #include <string>
 #include <algorithm>
-#include <iostream>
 #include <vector>
 #include <cassert>
 #include <map>
@@ -20,17 +19,12 @@ inline void to_lower(std::string& str) {
 }
 
 inline Color str_to_color(std::string& str) {
-  while (true) {
-    to_lower(str);
-    if (str == "black")       return Color::Black;
-    else if (str == "blue")   return Color::Blue;
-    else if (str == "red")    return Color::Red;
-    else if (str == "orange") return Color::Orange;
-    else {
-      std::cout << str << " cannot be converted to type Color. Enter color again: ";
-      std::cin >> str;
-    }
-  }
+  to_lower(str);
+  if (str == "black")       return Color::Black;
+  else if (str == "blue")   return Color::Blue;
+  else if (str == "red")    return Color::Red;
+  else if (str == "orange") return Color::Orange;
+  else                      return Color::None;
 }
 
 inline std::string color_to_str(Color col) {
@@ -42,43 +36,6 @@ inline std::string color_to_str(Color col) {
     case Color::None:    return "None";
     default: 
                          return "Unknown";
-  }
-}
-
-inline bool joker_check(std::vector<Tile>& vec, bool madeFristMove) {
-  while (true) {
-    std::cout << "How many jokers did you use to create this new Set? ";
-    int jokersUsed;
-    std::cin >> jokersUsed;
-
-    // Check for invalid input
-    if (jokersUsed < 0 || jokersUsed > INDIVIDUAL_TILE_FREQ) {
-      std::cout << "This is an impossible amount of jokers to use. Try again.\n";
-      continue;
-    }
-
-    for (int i = 0; i < jokersUsed; ++i) {
-      std::cout << "Enter the tile you want to replace with a joker in the format 'value color'.\n";
-
-      int val;
-      std::string c;
-      std::cin >> val >> c;
-
-      Color col = str_to_color(c);
-
-      // Search for the tile in the vector
-      auto it = std::find(vec.begin(), vec.end(), Tile(val, col));
-
-      // If not found, tell user to try again
-      if (it == vec.end()) {
-        std::cout << "This tile is not needed for what you want to create. Try again.\n";
-        i--;
-        continue; 
-      }
-      // If found, turn into joker
-      it->isJoker = true;
-    }
-    return true;
   }
 }
 
@@ -161,7 +118,6 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
     // Helper to explore all combinations of Jokers for a fixed start/end
     auto explore = [&](auto self, int currentVal, int jokersUsed) -> void {
       if (currentVal > MAX_TILE_VALUE) return;
-
       // Try using the real tile if available
       if (valueToTile[currentVal]) {
         currentRun.push_back(valueToTile[currentVal].value());
@@ -171,7 +127,6 @@ inline std::vector<Set> generate_runs(const std::vector<Tile>& tilesOfColor, con
         self(self, currentVal + 1, jokersUsed);
         currentRun.pop_back();
       }
-
       // Try using a joker if available
       if (jokersUsed < nJokers) {
         currentRun.push_back(Tile(currentVal, runColor, true));
@@ -242,21 +197,15 @@ inline std::vector<Set> generate_all_sets(const std::vector<Tile>& pool) {
 }
 
 inline bool set_can_be_placed(const Set& set, const TileMap& availableTiles) {
-
   TileMap tilesNeededForThisSet;
-
   for (Tile t : set.tiles) {
-
-    // 3. Normalize the joker so it matches what is actually in availableTiles
+    // Normalize the joker so it matches what is actually in availableTiles
     if (t.isJoker) {
       t.value = 0;           
       t.color = Color::None; 
     }
-
     tilesNeededForThisSet[t]++;
-
     int availableAmount = availableTiles[t];
-
     if (tilesNeededForThisSet[t] > availableAmount) {
       return false;
     }
@@ -333,10 +282,3 @@ inline std::vector<Tile> get_newly_placed_tiles(const Board& oldBoard, const Boa
 }
 
 #endif
-
-
-
-
-
-
-

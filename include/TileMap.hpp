@@ -7,6 +7,8 @@
 #include <vector>
 #include <cassert>
 
+// Custom map that maps a Tile to the generic type T
+
 template <typename T>
 class GenericTileMap {
   public:
@@ -14,9 +16,7 @@ class GenericTileMap {
 
     int index(const Tile& t) const {
       if (t.isJoker) return N_DIFF_TILES-1;
-
       if (t.color == Color::None) return N_DIFF_TILES-1;
-
       return (t.value - 1) * NUM_COLORS + static_cast<int>(t.color);
     }
 

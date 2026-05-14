@@ -10,7 +10,6 @@ InitialDrawDialog::InitialDrawDialog(QWidget *parent) : QDialog(parent) {
   setWindowTitle("AI Initial Draw");
   setModal(true);
 
-  // Set a generous default size and a reasonable minimum
   resize(1200, 600); 
   setMinimumSize(800, 600);
 

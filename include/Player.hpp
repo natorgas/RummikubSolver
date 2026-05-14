@@ -13,22 +13,19 @@
 class Player {
   public:
     Player() = delete;
-    void add_to_hand(const Tile& t);
-    const std::vector<Tile>& get_hand() const;
-    void set_hand(const std::vector<Tile>& h);
-    void set_progress_callback(std::function<void(std::string)> cb);
-
     Player(std::string nme);
-
     std::string get_name() const;
 
     virtual ~Player() = default;
-
     virtual void play_turn(Board& board, TilesBag& bag) = 0;
+    virtual bool draw_tile(TilesBag& bag) = 0;
+    virtual int n_owned_tiles() const;
 
+    const std::vector<Tile>& get_hand() const;
+    void set_progress_callback(std::function<void(std::string)> cb);
+    void add_to_hand(const Tile& t);
+    void set_hand(const std::vector<Tile>& h);
     void inital_draw(TilesBag& bag);
-    bool add_random_tile(TilesBag& bag);
-
     bool placed_all_tiles() const;
     bool made_first_move() const;
     void make_first_move();
@@ -36,20 +33,10 @@ class Player {
   protected:
     std::vector<Tile> hand;
     std::function<void(std::string)> progressCallback = nullptr;
-    void increase_tiles(int n);
-
-    void decrease_tiles(int n);
-
-
-
-    int n_owned_tiles() const;
 
   private:
-    virtual bool draw_tile(TilesBag& bag) = 0;
-    
     std::string name;
     bool hasMadeFirstMove;
-    int nOwnedTiles;
 };
 
 /***********************************************/
@@ -60,25 +47,16 @@ class Player {
 class HumanPlayer : public Player {
   public:
     HumanPlayer() = delete;
-
     HumanPlayer(std::string nme);
 
     // Sequence of moves making up a turn
     void play_turn(Board& board, TilesBag& bag) override;
+    bool draw_tile(TilesBag &bag) override;
+    int n_owned_tiles() const override;
+    void decrease_tiles(int amount);
 
   private:
-    bool draw_tile(TilesBag &bag) override;
-
-    // Individual moves such as creating a group
-    bool make_move(Board& board, TilesBag& bag);
-
-    bool create_group(Board& board);
-
-    bool create_run(Board& board);
-
-    bool remove_group(Board& board);
-
-    bool remove_run(Board& board);
+    int nOwnedTiles;
 };
 
 /*********************************************************/
@@ -91,13 +69,9 @@ class AIPlayer: public Player {
     AIPlayer(std::string nme);
 
     void play_turn(Board& board, TilesBag& bag) override;
-
-    
-    
-
-  private:
     bool draw_tile(TilesBag& bag) override;
 
+  private:
     bool find_best_move(
         const std::vector<Set>& allSets, 
         const int               initialBoardSize,

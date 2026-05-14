@@ -35,9 +35,13 @@ private:
     void startNextTurn();
     void processAITurn();
 
-    void setupGame(); // Replaces the setup part of your old main()
+    void setupGame();
 
-    // --- GUI Components ---
+    Board parseBoardFromScene();
+    bool validateBoardRules(const Board& newBoard);
+    bool validatePlayerHand(const Board& newBoard, std::vector<Tile>& outCurrentHand, int& outTilesPlaced);
+    bool validateFirstMove(const Board& newBoard);
+
     QGraphicsView* view;
     QGraphicsScene* scene;
     QGraphicsTextItem* aiStatusText;
@@ -46,12 +50,11 @@ private:
     QPushButton* doneBtn;
     QPushButton* drawTileBtn;
     QPushButton* spawnTileBtn;
-    
+
     Board initialBoard;
     std::vector<Tile> initialHand;
     int currentPlayerIndex;
 
-    // --- Game State ---
     Board board;
     TilesBag bag;
     std::vector<std::unique_ptr<Player>> players;

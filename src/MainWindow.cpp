@@ -1,3 +1,4 @@
+#include <cassert>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
@@ -11,6 +12,7 @@
 #include <QApplication>
 
 #include "Constants.hpp"
+#include "Player.hpp"
 #include "Utils.hpp"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), currentPlayerIndex(-1) {
@@ -134,9 +136,7 @@ void MainWindow::setupGame() {
 
   currentPlayerIndex = players.size() - 1;
   startNextTurn();
-
 }
-
 
 class TileItem : public QGraphicsRectItem {
   public:
@@ -149,13 +149,14 @@ class TileItem : public QGraphicsRectItem {
       QGraphicsTextItem* text = new QGraphicsTextItem(QString::number(t.value), this);
       QFont font = text->font();
       font.setBold(true);
-      font.setPointSize(14); // Make it slightly larger for better visibility
+      font.setPointSize(14);
       text->setFont(font);
       text->setPos(5, 5);
       if (t.isJoker) {
         text->setPlainText("J");
         text->setDefaultTextColor(Qt::black);
-      } else {
+      }
+      else {
         if (t.color == Color::Black) text->setDefaultTextColor(Qt::black);
         else if (t.color == Color::Blue) text->setDefaultTextColor(Qt::blue);
         else if (t.color == Color::Red) text->setDefaultTextColor(Qt::red);
@@ -167,18 +168,18 @@ class TileItem : public QGraphicsRectItem {
 void MainWindow::drawBoard() {
   if (aiStatusText && aiStatusText->scene() == scene) scene->removeItem(aiStatusText);
   if (turnStatusText && turnStatusText->scene() == scene) scene->removeItem(turnStatusText);
-  
+
   scene->clear();
-  
+
   if (aiStatusText) {
-      scene->addItem(aiStatusText);
-      aiStatusText->setPos(800, 50);
-      aiStatusText->setZValue(100);
+    scene->addItem(aiStatusText);
+    aiStatusText->setPos(800, 50);
+    aiStatusText->setZValue(100);
   }
   if (turnStatusText) {
-      scene->addItem(turnStatusText);
-      turnStatusText->setPos(400, 10);
-      turnStatusText->setZValue(100);
+    scene->addItem(turnStatusText);
+    turnStatusText->setPos(400, 10);
+    turnStatusText->setZValue(100);
   }
   int yOffset = 20;
 
@@ -207,17 +208,56 @@ void MainWindow::drawBoard() {
 void MainWindow::onResetClicked() {
   board = initialBoard;
   if (currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
-      players[currentPlayerIndex]->set_hand(initialHand);
+    players[currentPlayerIndex]->set_hand(initialHand);
   }
   drawBoard();
 }
 
 void MainWindow::onDoneClicked() {
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-      startNextTurn();
-      return;
+    if (players[currentPlayerIndex]->n_owned_tiles() == 0) {
+      QMessageBox::information(this, "Winner", QString::fromStdString(players[currentPlayerIndex]->get_name()) + " won!");
+      std::exit(0);
+    }
+    startNextTurn();
+    return;
   }
 
+  Board newBoard = parseBoardFromScene();
+
+  if (!validateBoardRules(newBoard)) {
+    onResetClicked();
+    return;
+  }
+
+  std::vector<Tile> currentHand;
+  int nTilesPlaced = 0;
+  if (!validatePlayerHand(newBoard, currentHand, nTilesPlaced)) {
+    onResetClicked();
+    return;
+  }
+
+  if (!validateFirstMove(newBoard)) {
+    onResetClicked();
+    return;
+  }
+
+  // Update Game State
+  players[currentPlayerIndex]->set_hand(currentHand);
+  dynamic_cast<HumanPlayer*>(players[currentPlayerIndex].get())->decrease_tiles(nTilesPlaced);
+  board = newBoard;
+
+  assert(players[currentPlayerIndex]->n_owned_tiles() >= 0 && "Can't have less than 0 tiles");
+  if (players[currentPlayerIndex]->n_owned_tiles() == 0) {
+    QMessageBox::information(this, "Winner", QString::fromStdString(players[currentPlayerIndex]->get_name()) + " won!");
+    std::exit(0);
+  }
+
+  QMessageBox::information(this, "Valid", "Move accepted!");
+  startNextTurn();
+}
+
+Board MainWindow::parseBoardFromScene() {
   std::vector<TileItem*> items;
   for (QGraphicsItem* item : scene->items()) {
     if (TileItem* ti = dynamic_cast<TileItem*>(item)) {
@@ -232,76 +272,65 @@ void MainWindow::onDoneClicked() {
 
   Board newBoard;
   std::vector<Tile> currentSet;
-  bool valid = true;
-  
+
   auto addSet = [&]() {
     if (!currentSet.empty()) {
-      // Find non-jokers to infer the set type
       std::vector<std::pair<int, Tile*>> nonJokers;
       for (size_t i = 0; i < currentSet.size(); ++i) {
-          if (!currentSet[i].isJoker) {
-              nonJokers.push_back({i, &currentSet[i]});
-          }
+        if (!currentSet[i].isJoker) {
+          nonJokers.push_back({int(i), &currentSet[i]});
+        }
       }
 
       bool isGroup = true;
       if (nonJokers.size() >= 2) {
-          if (nonJokers[0].second->value != nonJokers[1].second->value) {
-              isGroup = false;
-          }
+        if (nonJokers[0].second->value != nonJokers[1].second->value) {
+          isGroup = false;
+        }
       } else if (nonJokers.size() == 1) {
-          // Only 1 regular tile, rest are jokers. Could be either.
-          // Let's assume group if it's placed like a group? Hard to know.
-          // We will just try Group first, if it fails logically, fallback to Run.
-          // Actually, if we just look at the board, we can assume Run if we can build it.
-          // Let's assume Run if we can mathematically make it a Run (values fit in 1-13).
-          int refIdx = nonJokers[0].first;
-          int refVal = nonJokers[0].second->value;
-          int startVal = refVal - refIdx;
-          int endVal = startVal + currentSet.size() - 1;
-          if (startVal >= 1 && endVal <= 13) {
-              isGroup = false; // It fits as a run!
-          } else {
-              isGroup = true;
-          }
-      } else {
-          // All Jokers?!
+        int refIdx = nonJokers[0].first;
+        int refVal = nonJokers[0].second->value;
+        int startVal = refVal - refIdx;
+        int endVal = startVal + currentSet.size() - 1;
+        if (startVal >= 1 && endVal <= 13) {
+          isGroup = false;
+        } else {
           isGroup = true;
+        }
+      } else {
+        assert(false && "Can't be all jokers");
       }
 
-      // Infer Joker values/colors
       if (isGroup) {
-          int groupVal = nonJokers.empty() ? 1 : nonJokers[0].second->value;
-          std::vector<Color> available = {Color::Black, Color::Blue, Color::Red, Color::Orange};
-          for (auto nj : nonJokers) {
-              auto it = std::find(available.begin(), available.end(), nj.second->color);
-              if (it != available.end()) available.erase(it);
+        int groupVal = nonJokers.empty() ? 1 : nonJokers[0].second->value;
+        std::vector<Color> available = {Color::Black, Color::Blue, Color::Red, Color::Orange};
+        for (auto nj : nonJokers) {
+          auto it = std::find(available.begin(), available.end(), nj.second->color);
+          if (it != available.end()) available.erase(it);
+        }
+        for (size_t i = 0; i < currentSet.size(); ++i) {
+          if (currentSet[i].isJoker) {
+            currentSet[i].value = groupVal;
+            if (!available.empty()) {
+              currentSet[i].color = available.back();
+              available.pop_back();
+            } else {
+              currentSet[i].color = Color::None;
+            }
           }
-          for (size_t i = 0; i < currentSet.size(); ++i) {
-              if (currentSet[i].isJoker) {
-                  currentSet[i].value = groupVal;
-                  if (!available.empty()) {
-                      currentSet[i].color = available.back();
-                      available.pop_back();
-                  } else {
-                      currentSet[i].color = Color::None; // Invalid anyway
-                  }
-              }
-          }
+        }
       } else {
-          // Run
-          Color runColor = nonJokers.empty() ? Color::Black : nonJokers[0].second->color;
-          int startVal = nonJokers.empty() ? 1 : nonJokers[0].second->value - nonJokers[0].first;
-          for (size_t i = 0; i < currentSet.size(); ++i) {
-              if (currentSet[i].isJoker) {
-                  currentSet[i].value = startVal + i;
-                  currentSet[i].color = runColor;
-              }
+        Color runColor = nonJokers.empty() ? Color::Black : nonJokers[0].second->color;
+        int startVal = nonJokers.empty() ? 1 : nonJokers[0].second->value - nonJokers[0].first;
+        for (size_t i = 0; i < currentSet.size(); ++i) {
+          if (currentSet[i].isJoker) {
+            currentSet[i].value = startVal + int(i);
+            currentSet[i].color = runColor;
           }
+        }
       }
 
       Set s(isGroup ? SetType::Group : SetType::Run, currentSet);
-      // Push directly to not lose tiles if invalid
       if (isGroup) newBoard.groups.push_back(s);
       else newBoard.runs.push_back(s);
     }
@@ -320,82 +349,67 @@ void MainWindow::onDoneClicked() {
   }
   addSet();
 
-  for (Set& s : newBoard.runs) if (!s.valid()) valid = false;
-  for (Set& s : newBoard.groups) if (!s.valid()) valid = false;
+  return newBoard;
+}
 
+bool MainWindow::validateBoardRules(const Board& newBoard) {
+  bool valid = true;
+  for (const Set& s : newBoard.runs) if (!s.valid()) valid = false;
+  for (const Set& s : newBoard.groups) if (!s.valid()) valid = false;
+  if (!valid) {
+    QMessageBox::warning(this, "Invalid", "Board has invalid sets. Try again.");
+    return false;
+  }
   std::vector<Tile> oldTiles = initialBoard.tiles_on_board();
   std::vector<Tile> newTiles = newBoard.tiles_on_board();
   normalize_jokers(oldTiles);
   normalize_jokers(newTiles);
   std::sort(oldTiles.begin(), oldTiles.end());
   std::sort(newTiles.begin(), newTiles.end());
-
   if (!std::includes(newTiles.begin(), newTiles.end(), oldTiles.begin(), oldTiles.end())) {
     QMessageBox::warning(this, "Invalid", "Board is missing tiles from previous state. Try again.");
-    onResetClicked();
-    return;
+    return false;
   }
+  return true;
+}
 
-  if (!valid) {
-    QMessageBox::warning(this, "Invalid", "Board has invalid sets. Try again.");
-    onResetClicked();
-    return;
-  }
-
+bool MainWindow::validatePlayerHand(const Board& newBoard, std::vector<Tile>& outCurrentHand, int& outTilesPlaced) {
   std::vector<Tile> placed = get_newly_placed_tiles(initialBoard, newBoard);
+  outTilesPlaced = placed.size();
   if (placed.empty()) {
-      QMessageBox::warning(this, "Invalid", "You must place at least one tile or draw a tile to end your turn.");
-      return;
+    QMessageBox::warning(this, "Invalid", "You must place at least one tile or draw a tile to end your turn.");
+    return false;
   }
-
-  std::vector<Tile> currentHand = players[currentPlayerIndex]->get_hand();
+  outCurrentHand = players[currentPlayerIndex]->get_hand();
   bool handValid = true;
   for (const Tile& t : placed) {
-      auto it = std::find(currentHand.begin(), currentHand.end(), t);
-      if (it != currentHand.end()) {
-          currentHand.erase(it);
-      } else {
-          handValid = false;
-          break;
-      }
+    auto it = std::find(outCurrentHand.begin(), outCurrentHand.end(), t);
+    if (it != outCurrentHand.end()) {
+      outCurrentHand.erase(it);
+    } else {
+      handValid = false;
+      break;
+    }
   }
-
   if (!handValid) {
-      QMessageBox::warning(this, "Invalid", "You placed tiles that were not in your hand! Try again.");
-      onResetClicked();
-      return;
+    QMessageBox::warning(this, "Invalid", "You placed tiles that were not in your hand! Try again.");
+    return false;
   }
+  return true;
+}
 
-  // First move 30-point rule check
+bool MainWindow::validateFirstMove(const Board& newBoard) {
   if (!players[currentPlayerIndex]->made_first_move()) {
-      int moveSum = val_sum_of_placed_tiles(initialBoard, newBoard);
-      if (moveSum < MIN_FIRST_MOVE_SUM) {
-          QMessageBox::warning(this, "First Move Invalid", 
-                               QString("Initial move must have a total value of at least %1 points. "
-                                       "Current value: %2. Try again.").arg(MIN_FIRST_MOVE_SUM).arg(moveSum));
-          onResetClicked();
-          return;
-      }
-      
-      // Also ensure they didn't modify existing board tiles (only allowed to add)
-      // Since newTiles must include all oldTiles, if they haven't made first move, 
-      // the only way to not modify existing sets is if the original sets are still there.
-      // For simplicity, we just enforce the sum rule as most Rummikub implementations focus on that first.
-      players[currentPlayerIndex]->make_first_move();
+    int moveSum = val_sum_of_placed_tiles(initialBoard, newBoard);
+    if (moveSum < MIN_FIRST_MOVE_SUM) {
+      QMessageBox::warning(this, "First Move Invalid", 
+          QString("Initial move must have a total value of at least %1 points. "
+            "Current value: %2. Try again.").arg(MIN_FIRST_MOVE_SUM).arg(moveSum));
+      return false;
+    }
+    players[currentPlayerIndex]->make_first_move();
   }
-
-  players[currentPlayerIndex]->set_hand(currentHand);
-  board = newBoard;
-  
-  if (currentHand.empty()) {
-      QMessageBox::information(this, "Winner", QString::fromStdString(players[currentPlayerIndex]->get_name()) + " won!");
-      std::exit(0);
-  }
-
-  // Ensure first move logic is handled for Humans if they had such logic, 
-  // but if the board is valid, we just accept it.
-  QMessageBox::information(this, "Valid", "Move accepted!");
-  startNextTurn();
+  return true;
 }
 
 void MainWindow::onDrawTileClicked() {
@@ -407,37 +421,33 @@ void MainWindow::onDrawTileClicked() {
       Tile t(0, Color::None, true); // Default to a safe Joker state
       bool validParse = false;
       if (s == "Joker" || s == "joker" || s == "JOKER") {
-          t = Tile(0, Color::None, true);
-          validParse = true;
-      } else {
-          std::stringstream ss(s);
-          int val;
-          std::string c;
-          if (ss >> val >> c) {
-              std::string lower_c = c;
-              for (auto& ch : lower_c) ch = std::tolower(ch);
-              Color col = Color::None;
-              if (lower_c == "black") col = Color::Black;
-              else if (lower_c == "blue") col = Color::Blue;
-              else if (lower_c == "red") col = Color::Red;
-              else if (lower_c == "orange") col = Color::Orange;
-              
-              if (col != Color::None && val >= 1 && val <= 13) {
-                  t = Tile(val, col, false);
-                  validParse = true;
-              }
+        t = Tile(0, Color::None, true);
+        validParse = true;
+      } 
+      else {
+        std::stringstream ss(s);
+        int val;
+        std::string c;
+        if (ss >> val >> c) {
+          std::string lower_c = c;
+          for (auto& ch : lower_c) ch = std::tolower(ch);
+          Color col = str_to_color(lower_c);
+          if (col != Color::None && val >= 1 && val <= 13) {
+            t = Tile(val, col, false);
+            validParse = true;
           }
+        }
       }
-      
       if (validParse) {
-          static_cast<AIPlayer*>(players[currentPlayerIndex].get())->add_to_hand(t);
-          startNextTurn();
+        static_cast<AIPlayer*>(players[currentPlayerIndex].get())->add_to_hand(t);
+        startNextTurn();
       } else {
-          QMessageBox::warning(this, "Invalid", "Invalid tile format. Please use '13 Red' or 'Joker'.");
+        QMessageBox::warning(this, "Invalid", "Invalid tile format. Please use '13 Red' or 'Joker'.");
       }
     }
-    } else {
-    if (players[currentPlayerIndex]->add_random_tile(bag)) {
+  } 
+  else {
+    if (players[currentPlayerIndex]->draw_tile(bag)) {
       QMessageBox::information(this, "Draw", "Human drew a tile.");
       startNextTurn();
     }
@@ -448,12 +458,12 @@ void MainWindow::startNextTurn() {
   currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
   initialBoard = board;
   initialHand = players[currentPlayerIndex]->get_hand();
-  
+
   if (turnStatusText) {
-      turnStatusText->setPlainText(QString::fromStdString(players[currentPlayerIndex]->get_name()) + "'s Turn");
+    turnStatusText->setPlainText(QString::fromStdString(players[currentPlayerIndex]->get_name()) + "'s Turn");
   }
   if (aiStatusText) {
-      aiStatusText->setPlainText("");
+    aiStatusText->setPlainText("");
   }
 
   // Re-enable all buttons at turn start
@@ -461,116 +471,96 @@ void MainWindow::startNextTurn() {
   doneBtn->setEnabled(true);
   drawTileBtn->setEnabled(true);
   spawnTileBtn->setEnabled(true);
-  
+
   drawBoard();
 
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-    
     processAITurn();
   } 
-  else {
-    
-  }
 }
 
 void MainWindow::processAITurn() {
   AIPlayer* ai = static_cast<AIPlayer*>(players[currentPlayerIndex].get());
-
   // Disable all buttons during AI thought
   resetBtn->setEnabled(false);
   doneBtn->setEnabled(false);
   drawTileBtn->setEnabled(false);
   spawnTileBtn->setEnabled(false);
-
   // Position the text item on the right side
   aiStatusText->setPos(800, 50); 
   aiStatusText->setPlainText("AI is thinking...");
   if (!aiStatusText->scene()) scene->addItem(aiStatusText);
-  
   ai->set_progress_callback([this](std::string msg) {
       if (msg == "MUST_DRAW_TILE") {
-          aiStatusText->setPlainText("AI could not move.\nPlease press 'Draw Tile' for AI.");
+        aiStatusText->setPlainText("AI could not move.\nPlease press 'Draw Tile' for AI.");
       } 
       else {
-          aiStatusText->setPlainText(QString::fromStdString(msg));
+        aiStatusText->setPlainText(QString::fromStdString(msg));
       }
       QApplication::processEvents();
-  });
-  
+      });
+
   ai->play_turn(board, bag);
-  
   // Determine if AI was able to place any tiles
   std::vector<Tile> newlyPlaced = get_newly_placed_tiles(initialBoard, board);
-  
   if (!newlyPlaced.empty()) {
-      // AI placed tiles: only Done is allowed
-      doneBtn->setEnabled(true);
+    // AI placed tiles: only Done is allowed
+    doneBtn->setEnabled(true);
   } 
   else {
-      // AI could not move: only Draw Tile is allowed
-      drawTileBtn->setEnabled(true);
+    // AI could not move: only Draw Tile is allowed
+    drawTileBtn->setEnabled(true);
   }
-  
   drawBoard();
-  
   if (!aiStatusText->scene()) scene->addItem(aiStatusText);
   aiStatusText->setZValue(100);
 }
 
 void MainWindow::onSpawnTileClicked() {
-    if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-        QMessageBox::information(this, "AI Turn", "Spawning tiles during AI's turn is not permitted.");
-        return;
-    }
-    bool ok;
-    QString tileStr = QInputDialog::getText(this, "Spawn Tile", "Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):", QLineEdit::Normal, "", &ok);
-    if (ok && !tileStr.trimmed().isEmpty()) {
-        QStringList tileStrings = tileStr.split(",");
-        int spawnX = 50;
-        
-        for (const QString& tsRaw : tileStrings) {
-            std::string s = tsRaw.trimmed().toStdString();
-            if (s.empty()) continue;
-            
-            Tile t(0, Color::None, true);
-            bool validParse = false;
-            if (s == "Joker" || s == "joker" || s == "JOKER") {
-                t = Tile(0, Color::None, true);
-                validParse = true;
-            } 
-            else {
-                std::stringstream ss(s);
-                int val;
-                std::string c;
-                if (ss >> val >> c) {
-                    std::string lower_c = c;
-                    for (auto& ch : lower_c) ch = std::tolower(ch);
-                    Color col = Color::None;
-                    if (lower_c == "black") col = Color::Black;
-                    else if (lower_c == "blue") col = Color::Blue;
-                    else if (lower_c == "red") col = Color::Red;
-                    else if (lower_c == "orange") col = Color::Orange;
-                    
-                    if (col != Color::None && val >= 1 && val <= 13) {
-                        t = Tile(val, col, false);
-                        validParse = true;
-                    }
-                }
-            }
-            
-            if (!validParse) {
-                QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Skipping this one.").arg(QString::fromStdString(s)));
-                continue;
-            }
-            
-            if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-                players[currentPlayerIndex]->add_to_hand(t);
-            }
+  if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
+    QMessageBox::information(this, "AI Turn", "Spawning tiles during AI's turn is not permitted.");
+    return;
+  }
+  bool ok;
+  QString tileStr = QInputDialog::getText(this, "Spawn Tile", "Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):", QLineEdit::Normal, "", &ok);
+  if (ok && !tileStr.trimmed().isEmpty()) {
+    QStringList tileStrings = tileStr.split(",");
+    int spawnX = 50;
 
-            TileItem* visualItem = new TileItem(t);
-            visualItem->setPos(spawnX, 700); 
-            scene->addItem(visualItem);
-            spawnX += 50; // offset each spawned tile so they don't overlap perfectly
+    for (const QString& tsRaw : tileStrings) {
+      std::string s = tsRaw.trimmed().toStdString();
+      if (s.empty()) continue;
+      Tile t(0, Color::None, true);
+      bool validParse = false;
+      if (s == "Joker" || s == "joker" || s == "JOKER") {
+        t = Tile(0, Color::None, true);
+        validParse = true;
+      } 
+      else {
+        std::stringstream ss(s);
+        int val;
+        std::string c;
+        if (ss >> val >> c) {
+          std::string lower_c = c;
+          for (auto& ch : lower_c) ch = std::tolower(ch);
+          Color col = str_to_color(lower_c);
+          if (col != Color::None && val >= 1 && val <= 13) {
+            t = Tile(val, col, false);
+            validParse = true;
+          }
         }
+      }
+      if (!validParse) {
+        QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Skipping this one.").arg(QString::fromStdString(s)));
+        continue;
+      }
+      if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
+        players[currentPlayerIndex]->add_to_hand(t);
+      }
+      TileItem* visualItem = new TileItem(t);
+      visualItem->setPos(spawnX, 700); 
+      scene->addItem(visualItem);
+      spawnX += 50;
     }
+  }
 }

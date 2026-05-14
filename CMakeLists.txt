@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-add_executable(main
+add_executable(Rummikub
   src/main.cpp
   src/GameTypes.cpp
   src/Player.cpp
@@ -22,6 +22,6 @@ add_executable(main
   include/InitialDrawDialog.hpp
 )
 
-target_include_directories(main PRIVATE include)
-target_link_libraries(main PRIVATE Qt6::Widgets)
+target_include_directories(Rummikub PRIVATE include)
+target_link_libraries(Rummikub PRIVATE Qt6::Widgets)
 
