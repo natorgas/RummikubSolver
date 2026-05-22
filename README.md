@@ -48,12 +48,10 @@ After building, execute the compiled binary from the `build` directory:
 <img src="images/playerCountInput.png" width="450">
 2. Enter the names of all players. The first name you enter will be the one controlled by the AI, i.e. playing moves that maximize the number of tiles placed in every turn.
 <img src="images/playerNamesInput.png" width="450">
-3. You will be asked how much time you are 'willing to wait'. This refers to the maximal time the AI is allowed to search for the best move. Once that time is exceeded, the best move it has found so far is returned.
-<img src="images/waitingTimeInput.png" width="450">
-4. Everyone draws their initial tiles. The AI player must tell the AI which tiles they drew. A simple GUI will let the AI player select the drawn tiles. All other players simply draw and no information isgiven to the AI except for the fact that tiles have been drawn.
+3. Everyone draws their initial tiles. The AI player must tell the AI which tiles they drew. A simple GUI will let the AI player select the drawn tiles. All other players simply draw and no information isgiven to the AI except for the fact that tiles have been drawn.
 <img src="images/initialDraw.png" width="450">
 
-5. On AI player's turn:
+4. On AI player's turn:
     - Wait for the AI to find the best move.
 
     - You will be told which and how many tiles the AI player was able to place.
@@ -62,7 +60,7 @@ After building, execute the compiled binary from the `build` directory:
 
     - If no move was possible this will be communicated to you, draw a tile and tell the AI what you drew.
 
-6. On a human player's turn:
+5. On a human player's turn:
     - Tiles can be spawned during the move of a human. The process of it is self explanatory.
 
     - Tiles can be dragged and dropped anywhere on the board, according to a human player's moves. Tiles do not have to align perfectly for the program to recoginize that they belong to the same set. You will get a feeling of how much it takes as you play.
