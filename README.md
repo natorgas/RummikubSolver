@@ -44,7 +44,9 @@ After building, execute the compiled binary from the `build` directory:
 1. Enter the number of players.
 <img src="images/playerCountInput.png" width="450">
 2. Enter the names of all players. The first name you enter will be the one controlled by the AI, i.e. playing moves that maximize the number of tiles placed in every turn.
+<img src="images/playerNamesInput.png" width="450">
 3. You will be asked how much time you are 'willing to wait'. This refers to the maximal time the AI is allowed to search for the best move. Once that time is exceeded, the best move it has found so far is returned.
+<img src="images/waitingTimeInput.png" width="450">
 4. Everyone draws their initial tiles. The AI player must tell the AI which tiles they drew. A simple GUI will let the AI player select the drawn tiles. All other players simply draw and no information isgiven to the AI except for the fact that tiles have been drawn.
 5. On AI player's turn:
     - Wait for the AI to find the best move.
