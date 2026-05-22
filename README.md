@@ -9,7 +9,7 @@ The core AI is powered by a custom backtracking algorithm that models Rummikub's
 - **GUI Interface:** Modern interface built using Qt6.
 - **AI Player:** Play in the role of an AI player, which maximizes the placed tiles on every move.
 - **Interactive Board:** Drag and drop tiles visually to create your runs and groups.
-- **Rules Enforcement:** Implements core Rummikub rules including the 30-point initial move requirement.
+- **Rules Enforcement:** Implements core Rummikub rules according to the official [document](https://rummikub.com/wp-content/uploads/2019/12/2600-English-1.pdf).
 
 ## Prerequisites
 - C++17 compliant compiler
@@ -69,5 +69,3 @@ After building, execute the compiled binary from the `build` directory:
 
     - Once the human player is done you can click the done button. Different checks will be run and you will be informed if a move was invalid, in which case the board will be reset.
 
-## Note on First Move
-Your very first move must consist of placing sets that total **at least 30 points** from your own hand without manipulating existing tiles on the board.
