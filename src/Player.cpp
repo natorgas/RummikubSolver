@@ -232,11 +232,13 @@ bool AIPlayer::find_best_move(
       isValidMove = false;
     }
 
+    // Update stats if we found a move that places more tiles
     if (isValidMove && nHandTilesUsed > maxHandTilesUsed) {
       maxHandTilesUsed = nHandTilesUsed;
       bestSetIndexToUseFreq = setIndexToUseFreq;
       std::cout << "Can place " << maxHandTilesUsed << std::endl;
       if (progressCallback) progressCallback("Can place " + std::to_string(maxHandTilesUsed) + " tiles.");
+      // Signal a win if we placed all our tiles
       if (maxHandTilesUsed == n_owned_tiles()) {
         std::cout << get_name() << " won!\n";
         return true;
@@ -249,8 +251,9 @@ bool AIPlayer::find_best_move(
     int minSets = allSets.size();
 
     // Choose which tile we will try to place down next:
-    // For every tile on board check how many sets that we can build with the 
-    // remaining tiles contain that tile, choose tile with the least amount of options
+    // For every tile on board check how many sets that contain that tile we
+    // can build with the remaining tiles. Choose tile with the least amount of options
+    // for the sake of efficiency
     for (int val = MIN_TILE_VALUE; val <= MAX_TILE_VALUE; ++val) {
       for (Color c : ALL_COLORS) {
         Tile t(val, c);
@@ -269,6 +272,7 @@ bool AIPlayer::find_best_move(
       }
     }
     
+    // Jokers handled separately
     Tile joker(0, Color::None, true);
     if (boardTiles[joker] > 0) {
       int validSetsCount = 0;
@@ -323,6 +327,7 @@ bool AIPlayer::find_best_move(
           return true;
         }
 
+        // find_best_move returned false, we backtrack by removing the set we previously used
         setIndexToUseFreq[i]--;
         for (const Tile& t : trialSet.tiles) {
           if (t.isJoker) {
@@ -357,6 +362,7 @@ bool AIPlayer::find_best_move(
           else availableTiles[t]--;
         }
 
+        // Try to milk it even more
         if (find_best_move(allSets, initialBoardSize, boardTiles, availableTiles,
                            setIndexToUseFreq, bestSetIndexToUseFreq, maxHandTilesUsed, i, startTime, initialBoardValSum,
                            unplacedBoardTiles, nTilesOnBoardCount + trialSet.size(), currentBoardValSum + trialSetValSum, 

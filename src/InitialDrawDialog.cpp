@@ -1,4 +1,5 @@
 #include "InitialDrawDialog.hpp"
+#include "Constants.hpp"
 #include "Utils.hpp"
 #include <QLabel>
 #include <QVBoxLayout>
@@ -105,13 +106,13 @@ void InitialDrawDialog::onTileClicked() {
   int& count = *(selectionCounts.begin() + idx);
 
   if (count == 0) {
-    if (totalSelected < 14) {
+    if (totalSelected < INITIAL_N_OWNED_TILES) {
       count = 1;
       totalSelected++;
     }
   } 
   else if (count == 1) {
-    if (totalSelected < 14) {
+    if (totalSelected < INITIAL_N_OWNED_TILES) {
       count = 2;
       totalSelected++;
     } 
@@ -129,7 +130,7 @@ void InitialDrawDialog::onTileClicked() {
 
   updateButtonVisuals(btn, count);
   finishButton->setText(QString("Finish (%1/14)").arg(totalSelected));
-  finishButton->setEnabled(totalSelected == 14);
+  finishButton->setEnabled(totalSelected == INITIAL_N_OWNED_TILES);
 }
 
 void InitialDrawDialog::updateButtonVisuals(QPushButton* btn, int count) {
