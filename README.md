@@ -30,14 +30,14 @@ A C++ and Qt6 based implementation of the classic Rummikub tile game.
 
 3. Compile the project:
    ```bash
-   make -j$(nproc)
+   make
    ```
 
 ## Running the Game
 
 After building, execute the compiled binary from the `build` directory:
 ```bash
-./main
+./Rummikub
 ```
 
 ## How to Play
