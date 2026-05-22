@@ -14,7 +14,7 @@ class InitialDrawDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit InitialDrawDialog(QWidget *parent = nullptr);
+    explicit InitialDrawDialog(QWidget *parent = nullptr, int maxAllowed = INITIAL_N_OWNED_TILES, int minRequired = INITIAL_N_OWNED_TILES, QString title = "AI Initial Draw");
     std::vector<Tile> getDrawnTiles() const;
 
 private slots:
@@ -30,6 +30,8 @@ private:
     std::array<QPushButton*, N_DIFF_TILES> tileButtons;
 
     int totalSelected = 0;
+    int maxAllowed;
+    int minRequired;
     QPushButton* finishButton;
 };
 

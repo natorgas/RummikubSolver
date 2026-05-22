@@ -545,48 +545,14 @@ void MainWindow::onSpawnTileClicked() {
     QMessageBox::information(this, "AI Turn", "Spawning tiles during AI's turn is not permitted.");
     return;
   }
-  QInputDialog spawnDialog(this);
-  spawnDialog.setWindowTitle("Spawn Tile");
-  spawnDialog.setLabelText("Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):");
-  spawnDialog.setInputMode(QInputDialog::TextInput);
-  spawnDialog.setTextValue("");
-  spawnDialog.resize(400, 300);
-  bool ok = spawnDialog.exec() == QDialog::Accepted;
-  QString tileStr = spawnDialog.textValue();
-  if (ok && !tileStr.trimmed().isEmpty()) {
-    QStringList tileStrings = tileStr.split(",");
+  
+  InitialDrawDialog spawnDialog(this, 106, 1, "Spawn Tiles");
+  if (spawnDialog.exec() == QDialog::Accepted) {
+    std::vector<Tile> spawnedTiles = spawnDialog.getDrawnTiles();
     int spawnX = 50;
 
-    for (const QString& tsRaw : tileStrings) {
-      std::string s = tsRaw.trimmed().toStdString();
-      if (s.empty()) continue;
-      Tile t(0, Color::None, true);
-      bool validParse = false;
-      if (s == "Joker" || s == "joker" || s == "JOKER") {
-        t = Tile(0, Color::None, true);
-        validParse = true;
-      } 
-      else {
-        std::stringstream ss(s);
-        int val;
-        std::string c;
-        if (ss >> val >> c) {
-          std::string lower_c = c;
-          for (auto& ch : lower_c) ch = std::tolower(ch);
-          Color col = str_to_color(lower_c);
-          if (col != Color::None && val >= 1 && val <= 13) {
-            t = Tile(val, col, false);
-            validParse = true;
-          }
-        }
-      }
-      if (!validParse) {
-        QMessageBox::warning(this, "Invalid", QString("Could not parse tile: '%1'. Skipping this one.").arg(QString::fromStdString(s)));
-        continue;
-      }
-      if (!dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-        players[currentPlayerIndex]->add_to_hand(t);
-      }
+    for (const Tile& t : spawnedTiles) {
+      players[currentPlayerIndex]->add_to_hand(t);
       TileItem* visualItem = new TileItem(t);
       visualItem->setPos(spawnX, 700); 
       scene->addItem(visualItem);

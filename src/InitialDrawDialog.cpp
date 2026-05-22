@@ -7,8 +7,8 @@
 #include <QGridLayout>
 #include <QFont>
 
-InitialDrawDialog::InitialDrawDialog(QWidget *parent) : QDialog(parent) {
-  setWindowTitle("AI Initial Draw");
+InitialDrawDialog::InitialDrawDialog(QWidget *parent, int maxAllowed, int minRequired, QString title) : QDialog(parent), maxAllowed(maxAllowed), minRequired(minRequired) {
+  setWindowTitle(title);
   setModal(true);
 
   resize(1200, 600); 
@@ -85,9 +85,13 @@ void InitialDrawDialog::setupUi() {
   bottomLayout->addWidget(jBtn);
   bottomLayout->addStretch();
 
-  finishButton = new QPushButton("Finish (0/14)", this);
+  if (maxAllowed == minRequired) {
+    finishButton = new QPushButton(QString("Finish (0/%1)").arg(maxAllowed), this);
+  } else {
+    finishButton = new QPushButton("Finish (0 selected)", this);
+  }
   finishButton->setMinimumSize(200, 60);
-  finishButton->setEnabled(false);
+  finishButton->setEnabled(minRequired == 0);
 
   // Make the finish button look distinct
   finishButton->setStyleSheet("font-size: 18px; font-weight: bold;");
@@ -106,13 +110,13 @@ void InitialDrawDialog::onTileClicked() {
   int& count = *(selectionCounts.begin() + idx);
 
   if (count == 0) {
-    if (totalSelected < INITIAL_N_OWNED_TILES) {
+    if (totalSelected < maxAllowed) {
       count = 1;
       totalSelected++;
     }
   } 
   else if (count == 1) {
-    if (totalSelected < INITIAL_N_OWNED_TILES) {
+    if (totalSelected < maxAllowed) {
       count = 2;
       totalSelected++;
     } 
@@ -129,8 +133,12 @@ void InitialDrawDialog::onTileClicked() {
   }
 
   updateButtonVisuals(btn, count);
-  finishButton->setText(QString("Finish (%1/14)").arg(totalSelected));
-  finishButton->setEnabled(totalSelected == INITIAL_N_OWNED_TILES);
+  if (maxAllowed == minRequired) {
+    finishButton->setText(QString("Finish (%1/%2)").arg(totalSelected).arg(maxAllowed));
+  } else {
+    finishButton->setText(QString("Finish (%1 selected)").arg(totalSelected));
+  }
+  finishButton->setEnabled(totalSelected >= minRequired && totalSelected <= maxAllowed);
 }
 
 void InitialDrawDialog::updateButtonVisuals(QPushButton* btn, int count) {
