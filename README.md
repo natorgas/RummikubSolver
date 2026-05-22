@@ -42,14 +42,17 @@ After building, execute the compiled binary from the `build` directory:
 
 ## How to Play
 1. Enter the number of players.
-2. The AI will draw its starting tiles (via prompt if testing, or automatically).
-3. Human players draw their 14 initial tiles.
-4. On your turn, you can:
-   - Drag tiles from your hand to the board to form **Runs** (same color, sequential numbers) or **Groups** (same number, different colors).
-   - Rearrange existing tiles on the board.
-   - Click "Draw Tile" if you cannot or do not want to place any tiles.
-   - Click "Done" to end your turn and validate your moves.
-   - Click "Reset" to undo your current moves and start your turn over.
+2. Enter the names of all players. The first name you enter will be the one controlled by the AI, i.e. playing moves that maximize the number of tiles placed in every turn.
+3. Everyone draws their initial tiles. The AI player must tell the AI which tiles they drew. A simple GUI will let the AI player select the drawn tiles. All other players simply draw and no information isgiven to the AI except for the fact that tiles have been drawn.
+4. On AI player's turn:
+    - Wait for the AI to find the best move.
+    - You will be told which and how many tiles the AI player was able to place.
+    - If you are playing in real life, take your time to update the real board by copying the newly displayed board which now includes the AI move.
+    - If no move was possible this will be communicated to you, draw a tile and tell the AI what you drew.
+5. On a human player's turn:
+    - Tiles can be spawned during the move of a human. The process of it is self explanatory.
+    - Tiles can be dragged and dropped anywhere on the board, according to a human player's moves. Tiles do not have to align perfectly for the program to recoginize that they belong to the same set. You will get a feeling of how much it takes as you play.
+    - Once the human player is done you can click the done button. Different checks will be run and you will be informed if a move was invalid, in which case the board will be reset.
 
 ## Note on First Move
 Your very first move must consist of placing sets that total **at least 30 points** from your own hand without manipulating existing tiles on the board.
