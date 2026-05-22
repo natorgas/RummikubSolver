@@ -65,17 +65,34 @@ void MainWindow::setupGame() {
   bool ok;
 
   // Get number of players
-  int nPlayers = QInputDialog::getInt(this, "Setup", "How many players are playing?", 2, 2, 4, 1, &ok);
+  QInputDialog dialog(this);
+  dialog.setWindowTitle("Setup");
+  dialog.setLabelText("How many players are playing?");
+  dialog.setInputMode(QInputDialog::IntInput);
+  dialog.setIntRange(2, 4);
+  dialog.setIntValue(2);
+  dialog.setIntStep(1);
+  dialog.resize(400, 300);
+  
+  ok = dialog.exec() == QDialog::Accepted;
   if (!ok) {
     std::exit(0);
     return;
   }
+  int nPlayers = dialog.intValue();
 
   // Get player names
   for (int i = 0; i < nPlayers; ++i) {
     std::string rawString = "Enter name for player " + std::to_string(i) + "\n(Player 0 is AI):";
     QString prompt = QString::fromStdString(rawString);
-    QString qName = QInputDialog::getText(this, "Player Name", prompt, QLineEdit::Normal, "", &ok);
+    QInputDialog nameDialog(this);
+    nameDialog.setWindowTitle("Player Name");
+    nameDialog.setLabelText(prompt);
+    nameDialog.setInputMode(QInputDialog::TextInput);
+    nameDialog.setTextValue("");
+    nameDialog.resize(400, 300);
+    ok = nameDialog.exec() == QDialog::Accepted;
+    QString qName = nameDialog.textValue();
 
     // Handle empty names or cancellations
     std::string name;
@@ -102,8 +119,16 @@ void MainWindow::setupGame() {
   }
 
   // Get time limit
-  timeLimit = QInputDialog::getInt(this, "Time Limit", "How long are you willing to wait? (in seconds):", 30, 1, 180, 1, &ok);
-  if (!ok) timeLimit = 20; // Default fallback
+  QInputDialog timeDialog(this);
+  timeDialog.setWindowTitle("Time Limit");
+  timeDialog.setLabelText("How long are you willing to wait? (in seconds):");
+  timeDialog.setInputMode(QInputDialog::IntInput);
+  timeDialog.setIntRange(1, 180);
+  timeDialog.setIntValue(30);
+  timeDialog.setIntStep(1);
+  timeDialog.resize(400, 300);
+  ok = timeDialog.exec() == QDialog::Accepted;
+  timeLimit = ok ? timeDialog.intValue() : 20; // Default fallback
 
   QString infoStr = QString("Values go from %1 to %2.\n\n").arg(MIN_TILE_VALUE).arg(MAX_TILE_VALUE);
   infoStr += "Colors are: ";
@@ -406,8 +431,14 @@ bool MainWindow::validateFirstMove(const Board& newBoard) {
 
 void MainWindow::onDrawTileClicked() {
   if (dynamic_cast<AIPlayer*>(players[currentPlayerIndex].get())) {
-    bool ok;
-    QString tileStr = QInputDialog::getText(this, "AI Draw", "Enter drawn tile (e.g. '13 Red' or 'Joker'):", QLineEdit::Normal, "", &ok);
+    QInputDialog drawDialog(this);
+    drawDialog.setWindowTitle("AI Draw");
+    drawDialog.setLabelText("Enter drawn tile (e.g. '13 Red' or 'Joker'):");
+    drawDialog.setInputMode(QInputDialog::TextInput);
+    drawDialog.setTextValue("");
+    drawDialog.resize(400, 300);
+    bool ok = drawDialog.exec() == QDialog::Accepted;
+    QString tileStr = drawDialog.textValue();
     if (ok && !tileStr.trimmed().isEmpty()) {
       std::string s = tileStr.trimmed().toStdString();
       Tile t(0, Color::None, true); // Default to a safe Joker state
@@ -514,8 +545,14 @@ void MainWindow::onSpawnTileClicked() {
     QMessageBox::information(this, "AI Turn", "Spawning tiles during AI's turn is not permitted.");
     return;
   }
-  bool ok;
-  QString tileStr = QInputDialog::getText(this, "Spawn Tile", "Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):", QLineEdit::Normal, "", &ok);
+  QInputDialog spawnDialog(this);
+  spawnDialog.setWindowTitle("Spawn Tile");
+  spawnDialog.setLabelText("Enter tiles to spawn separated by commas (e.g. '13 Red, Joker, 5 Blue'):");
+  spawnDialog.setInputMode(QInputDialog::TextInput);
+  spawnDialog.setTextValue("");
+  spawnDialog.resize(400, 300);
+  bool ok = spawnDialog.exec() == QDialog::Accepted;
+  QString tileStr = spawnDialog.textValue();
   if (ok && !tileStr.trimmed().isEmpty()) {
     QStringList tileStrings = tileStr.split(",");
     int spawnX = 50;
