@@ -17,7 +17,7 @@ A C++ and Qt6 based implementation of the classic Rummikub tile game.
 
 1. Clone the repository:
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/natorgas/RummikubSolver.git Rummikub
    cd Rummikub
    ```
 
