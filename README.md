@@ -2,6 +2,9 @@
 
 A C++ solver for the game Rummikub. This code implements a GUI interface for Rummikub and the possibility to let an algorithm find the best move for you in every turn. All you need to do is tell the AI what tiles you draw and replicate the moves of other players. This makes sure that the AI always sees the most recent version of the tiles we own and the sets on the board.
 
+### How algorithm works
+The core AI is powered by a custom backtracking algorithm that models Rummikub's board state as an Exact Cover optimization problem (similar to Knuth's Algorithm X).It recursively evaluates combinations of valid sets to guarantee that all pre-existing board tiles are legally reused, while simultaneously maximizing the number of new tiles played from the AI's hand. To navigate the massive mathematical search space within time limits, the algorithm employs the Minimum Remaining Values heuristic, pruning dead ends by always prioritizing the board tiles that belong to the fewest possible valid sets.
+
 ## Features
 - **GUI Interface:** Modern interface built using Qt6.
 - **AI Player:** Play in the role of an AI player, which maximizes the placed tiles on every move.
