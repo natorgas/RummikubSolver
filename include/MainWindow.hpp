@@ -58,7 +58,6 @@ private:
     Board board;
     TilesBag bag;
     std::vector<std::unique_ptr<Player>> players;
-    int timeLimit;
 };
 
 #endif

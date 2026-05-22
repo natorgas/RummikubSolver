@@ -12,7 +12,7 @@ constexpr int INITIAL_N_OWNED_TILES = 14;
 constexpr int MIN_SET_SIZE = 3;
 constexpr int MAX_GROUP_SIZE = 4;
 constexpr int MIN_FIRST_MOVE_SUM = 30;
-inline double TIME_LIMIT = 300;
+inline double TIME_LIMIT = 60;
 constexpr int N_DIFF_TILES = MAX_TILE_VALUE * NUM_COLORS + INDIVIDUAL_TILE_FREQ; // numbers * colors + jokers
 constexpr std::array<Color, NUM_COLORS> ALL_COLORS = {Color::Black, 
                                                       Color::Red,

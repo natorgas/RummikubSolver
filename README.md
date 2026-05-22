@@ -9,7 +9,7 @@ The core AI is powered by a custom backtracking algorithm that models Rummikub's
 - **GUI Interface:** Modern interface built using Qt6.
 - **AI Player:** Play in the role of an AI player, which maximizes the placed tiles on every move.
 - **Interactive Board:** Drag and drop tiles visually to create your runs and groups.
-- **Rules Enforcement:** Implements core Rummikub rules according to the official [document](https://rummikub.com/wp-content/uploads/2019/12/2600-English-1.pdf).
+- **Rules Enforcement:** Implements core Rummikub rules according to the [official document](https://rummikub.com/wp-content/uploads/2019/12/2600-English-1.pdf).
 
 ## Prerequisites
 - C++17 compliant compiler

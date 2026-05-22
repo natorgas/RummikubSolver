@@ -118,18 +118,6 @@ void MainWindow::setupGame() {
     }
   }
 
-  // Get time limit
-  QInputDialog timeDialog(this);
-  timeDialog.setWindowTitle("Time Limit");
-  timeDialog.setLabelText("How long are you willing to wait? (in seconds):");
-  timeDialog.setInputMode(QInputDialog::IntInput);
-  timeDialog.setIntRange(1, 180);
-  timeDialog.setIntValue(30);
-  timeDialog.setIntStep(1);
-  timeDialog.resize(400, 300);
-  ok = timeDialog.exec() == QDialog::Accepted;
-  timeLimit = ok ? timeDialog.intValue() : 20; // Default fallback
-
   QString infoStr = QString("Values go from %1 to %2.\n\n").arg(MIN_TILE_VALUE).arg(MAX_TILE_VALUE);
   infoStr += "Colors are: ";
   for (const Color& c : ALL_COLORS) {
