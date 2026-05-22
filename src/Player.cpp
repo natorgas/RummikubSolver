@@ -98,7 +98,7 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   for (const Tile& t : hand) {
     allTiles[t]++;
   }
-  // Don't use board.size, for that case that this is our first move -> need this to be 0
+  // Don't use board.size, for the case that this is our first move -> need this to be 0
   const int initialBoardSize = tilesOnBoard.size();
   int initialBoardValSum = 0;
   for (const Tile& t : tilesOnBoard) {
@@ -111,7 +111,6 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
   // Sort in descending order (heuristic)
   std::sort(allSets.begin(), allSets.end(), 
             [](const Set& a, const Set& b){ return a.size() > b.size(); });
-  auto startTime = std::chrono::high_resolution_clock::now();
   
   int unplacedBoardTiles = initialBoardSize;
   int nTilesOnBoardCount = 0;
@@ -126,6 +125,8 @@ void AIPlayer::play_turn(Board& board, TilesBag& bag) {
       }
     }
   }
+
+  auto startTime = std::chrono::high_resolution_clock::now();
 
   find_best_move(allSets, initialBoardSize, boardTiles, allTiles, setIndexToUseFreq,
                  bestSetIndexToUseFreq, maxHandTilesUsed, allSetsIndex, startTime, initialBoardValSum,

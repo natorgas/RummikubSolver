@@ -102,7 +102,7 @@ void MainWindow::setupGame() {
   }
 
   // Get time limit
-  timeLimit = QInputDialog::getInt(this, "Time Limit", "Wie lang magsch warte? (in seconds):", 30, 1, 60, 1, &ok);
+  timeLimit = QInputDialog::getInt(this, "Time Limit", "How long are you willing to wait? (in seconds):", 30, 1, 180, 1, &ok);
   if (!ok) timeLimit = 20; // Default fallback
 
   QString infoStr = QString("Values go from %1 to %2.\n\n").arg(MIN_TILE_VALUE).arg(MAX_TILE_VALUE);
@@ -314,12 +314,14 @@ Board MainWindow::parseBoardFromScene() {
             if (!available.empty()) {
               currentSet[i].color = available.back();
               available.pop_back();
-            } else {
+            } 
+            else {
               currentSet[i].color = Color::None;
             }
           }
         }
-      } else {
+      } 
+      else {
         Color runColor = nonJokers.empty() ? Color::Black : nonJokers[0].second->color;
         int startVal = nonJokers.empty() ? 1 : nonJokers[0].second->value - nonJokers[0].first;
         for (size_t i = 0; i < currentSet.size(); ++i) {
@@ -358,16 +360,6 @@ bool MainWindow::validateBoardRules(const Board& newBoard) {
   for (const Set& s : newBoard.groups) if (!s.valid()) valid = false;
   if (!valid) {
     QMessageBox::warning(this, "Invalid", "Board has invalid sets. Try again.");
-    return false;
-  }
-  std::vector<Tile> oldTiles = initialBoard.tiles_on_board();
-  std::vector<Tile> newTiles = newBoard.tiles_on_board();
-  normalize_jokers(oldTiles);
-  normalize_jokers(newTiles);
-  std::sort(oldTiles.begin(), oldTiles.end());
-  std::sort(newTiles.begin(), newTiles.end());
-  if (!std::includes(newTiles.begin(), newTiles.end(), oldTiles.begin(), oldTiles.end())) {
-    QMessageBox::warning(this, "Invalid", "Board is missing tiles from previous state. Try again.");
     return false;
   }
   return true;
@@ -441,7 +433,8 @@ void MainWindow::onDrawTileClicked() {
       if (validParse) {
         static_cast<AIPlayer*>(players[currentPlayerIndex].get())->add_to_hand(t);
         startNextTurn();
-      } else {
+      } 
+      else {
         QMessageBox::warning(this, "Invalid", "Invalid tile format. Please use '13 Red' or 'Joker'.");
       }
     }

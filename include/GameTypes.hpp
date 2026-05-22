@@ -41,8 +41,7 @@ struct Set {
 
 /**************************** Board ***********************/
 
-class Board {
-  public:
+struct Board {
     Board();
     // True <=> adding set to board was successful
     bool add_set(const Set& set);
