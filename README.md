@@ -1,10 +1,10 @@
 # Rummikub
 
-A C++ and Qt6 based implementation of the classic Rummikub tile game.
+A C++ solver for the game Rummikub. This code implements a GUI interface for Rummikub and the possibility to let an algorithm find the best move for you in every turn. All you need to do is tell the AI what tiles you draw and replicate the moves of other players. This makes sure that the AI always sees the most recent version of the tiles we own and the sets on the board.
 
 ## Features
 - **GUI Interface:** Modern interface built using Qt6.
-- **AI Player:** Play against an AI opponent capable of calculating complex board state changes.
+- **AI Player:** Play in the role of an AI player, which maximizes the placed tiles on every move.
 - **Interactive Board:** Drag and drop tiles visually to create your runs and groups.
 - **Rules Enforcement:** Implements core Rummikub rules including the 30-point initial move requirement.
 
