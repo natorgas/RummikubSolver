@@ -291,7 +291,7 @@ bool AIPlayer::find_best_move(
     if (minSets == 0) return false;
     for (int i : setsContainingTile[firstUnplaced]) {
       const Set& trialSet = allSets[i];
-      if (set_can_be_placed(trialSet, availableTiles)) {
+      if (set_can_be_placed(trialSet, availableTiles)) { // TODO: We could save which sets can be placed in the first pass
         setIndexToUseFreq[i]++;
         std::vector<Tile> decrementedBoardTiles;
         decrementedBoardTiles.reserve(trialSet.size());
